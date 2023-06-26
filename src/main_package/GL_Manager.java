@@ -32,6 +32,8 @@ public class GL_Manager implements Runnable{
 	// VAO VBO
 	int VAO_LINE;
 	int VBO_LINE;
+	int VAO_STL;
+	int VBO_STL;
 	
 	// bed grid
 	int num_grid_line;
@@ -44,7 +46,7 @@ public class GL_Manager implements Runnable{
 	float[] eyeVec = new float[3];
 	float[] targetVec = new float[3];
 	float[] headVec = new float[3];
-	float rot_X = 45.0f;
+	float rot_X = -45.0f;
 	float rot_Z = 0.0f;
 	float acc_rot_X = 0.0f;
 	float acc_rot_Z = 0.0f;
@@ -61,7 +63,7 @@ public class GL_Manager implements Runnable{
 		// setup bed lines;
 		int iterX = ParamHolder.A_X / 10;
 		int iterY = ParamHolder.A_Y / 10;
-		int numVert = (iterX+1)*2 + (iterY+1)*2;
+		int numVert = (iterX+1)*2 + (iterY+1)*2 + 2;
 		float endX = (float)(ParamHolder.A_X)/2.0f;
 		float endY = (float)(ParamHolder.A_Y)/2.0f;
 		int ID = 0;
@@ -92,10 +94,20 @@ public class GL_Manager implements Runnable{
 			bed_A[ID] = 0.0f;	ID++; // z2
 		}
 		
+		// add origin pole
+		bed_A[ID] = -endX;	ID++;
+		bed_A[ID] = -endY;	ID++;
+		bed_A[ID] = 0.0f;	ID++;
+		
+		bed_A[ID] = -endX;	ID++;
+		bed_A[ID] = -endY;	ID++;
+		bed_A[ID] = 30.0f;	ID++;
+		
+		
 		/// B
 		iterX = ParamHolder.B_X / 10;
 		iterY = ParamHolder.B_Y / 10;
-		numVert = (iterX+1)*2 + (iterY+1)*2;
+		numVert = (iterX+1)*2 + (iterY+1)*2 + 2;
 		endX = (float)(ParamHolder.B_X)/2.0f;
 		endY = (float)(ParamHolder.B_Y)/2.0f;
 		ID = 0;
@@ -127,11 +139,19 @@ public class GL_Manager implements Runnable{
 			bed_B[ID] = 0.0f;	ID++; // z2
 		}
 		
+		// add origin pole
+		bed_B[ID] = -endX;	ID++;
+		bed_B[ID] = -endY;	ID++;
+		bed_B[ID] = 0.0f;	ID++;
 		
-		/// B
+		bed_B[ID] = -endX;	ID++;
+		bed_B[ID] = -endY;	ID++;
+		bed_B[ID] = 30.0f;	ID++;
+		
+		/// C
 		iterX = ParamHolder.C_X / 10;
 		iterY = ParamHolder.C_Y / 10;
-		numVert = (iterX+1)*2 + (iterY+1)*2;
+		numVert = (iterX+1)*2 + (iterY+1)*2 + 2;
 		endX = (float)(ParamHolder.C_X)/2.0f;
 		endY = (float)(ParamHolder.C_Y)/2.0f;
 		ID = 0;
@@ -162,7 +182,14 @@ public class GL_Manager implements Runnable{
 			bed_C[ID] = pY;		ID++; // y2
 			bed_C[ID] = 0.0f;	ID++; // z2
 		}
+		// add origin pole
+		bed_C[ID] = -endX;	ID++;
+		bed_C[ID] = -endY;	ID++;
+		bed_C[ID] = 0.0f;	ID++;
 		
+		bed_C[ID] = -endX;	ID++;
+		bed_C[ID] = -endY;	ID++;
+		bed_C[ID] = 30.0f;	ID++;
 		
 	}
 	
@@ -270,7 +297,7 @@ public class GL_Manager implements Runnable{
 		if( eyeLength < 200.0f) { eyeLength = 200.0f; }
 		else if( eyeLength > 500.0f) { eyeLength = 500.0f; }
 		
-		eyeVec[0] = 0.0f;	eyeVec[1] = eyeLength;		eyeVec[2] = 0.0f;
+		eyeVec[0] = 0.0f;	eyeVec[1] = -eyeLength;		eyeVec[2] = 0.0f;
 		headVec[0] = 0.0f;	headVec[1] = 0.0f;	headVec[2] = 1.0f;
 		
 		acc_rot_X *= 0.6f;
@@ -383,7 +410,7 @@ public class GL_Manager implements Runnable{
 				System.out.println(deltaX + "/" + deltaY);
 				
 				// rotate view axis
-				acc_rot_X -= deltaY * 0.15f;
+				acc_rot_X += deltaY * 0.15f;
 				acc_rot_Z += deltaX * 0.2f;
 				
 				// reset prev
@@ -505,11 +532,15 @@ public class GL_Manager implements Runnable{
 	
 	void setup_VAO_VBO()
 	{
+		// for bed grid line
 		VAO_LINE = GL46.glGenVertexArrays();
 		VBO_LINE = GL46.glGenBuffers();
 		
 		GL46.glBindVertexArray(VAO_LINE);
 		GL46.glEnableVertexAttribArray(0); // vertex
+		
+		// for STL objects
+		VAO_STL = GL46.glGenVertexArrays();
 		
 		GL46.glBindVertexArray(0);
 	}
