@@ -1,0 +1,17 @@
+#version 460
+
+// in
+layout (location = 0) in vec3 position;
+
+// out 
+
+// UNF
+uniform mat4 mvpMatrix;
+
+void main()
+{
+	vec4 pos4 = vec4(position, 1.0);
+	vec4 tempPos = mvpMatrix * pos4;
+
+	gl_Position = tempPos;
+}
