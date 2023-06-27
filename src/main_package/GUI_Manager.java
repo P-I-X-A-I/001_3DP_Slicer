@@ -112,16 +112,9 @@ public class GUI_Manager implements ActionListener{
 				if( e.getValueIsAdjusting() == false) // mouse released
 				{
 					int sel = ListView_STL.getSelectedIndex();
-					System.out.println("Listview listener "+sel);
-					if(sel != -1)
-					{
-						// *******************
-						// set selected STL
-					}
-					else
-					{
-						// no selection
-					}
+					System.out.println("Selected STL "+sel);
+					
+					ParamHolder.SELECTED_STL_ID = sel;
 				}
 			}
 		};

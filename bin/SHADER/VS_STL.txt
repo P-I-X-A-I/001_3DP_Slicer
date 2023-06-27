@@ -7,16 +7,40 @@ layout (location = 1) in vec3 normal;
 
 // out 
 out vec3 normal_vs;
+out vec3 light_vs;
+out float specular;
 
 // UNF
 uniform mat4 mvpMatrix;
+uniform mat4 rotateMatrix;
 
 void main()
 {
 	vec4 pos4 = vec4(position, 1.0);
 	vec4 tempPos = mvpMatrix * pos4;
-
 	gl_Position = tempPos;
 
+
+	// light vec
+	vec4 toLightVec = vec4(0.0, 0.0, 1.0, 1.0);
+	vec4 rotLight = rotateMatrix * toLightVec;
+	light_vs = rotLight.xyz;
+	
+	// specular vec
+	vec4 toEyeVec = vec4(0.0 - position.x,
+						 -200.0 - position.y,
+						 0.0 - position.z,
+						 1.0);
+						 
+	vec4 rotEye = rotateMatrix * toEyeVec;
+	vec4 normEye = normalize( rotEye );
+	float specValue = dot( normal, normEye.xyz);
+	specValue = pow( specValue, 5.0 );
+	specValue = max( specValue, 0.0 ) * 7.0;
+	specValue = floor(specValue);
+	
+	specular = (specValue / 7.0)*0.5;
+	
+	// normal
 	normal_vs = normal;
 }

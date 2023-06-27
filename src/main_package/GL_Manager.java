@@ -28,12 +28,16 @@ public class GL_Manager implements Runnable{
 	int VS_STL;
 	int FS_STL;
 	int PRG_STL;
+	int UNF_STL_mvpMatrix;
+	int UNF_STL_singleColor;
+	int UNF_STL_rotateMatrix;
 	
 	// VAO VBO
 	int VAO_LINE;
 	int VBO_LINE;
 	int VAO_STL;
-	int VBO_STL;
+	int VBO_STL_VERT;
+	int VBO_STL_NORM;
 	
 	// bed grid
 	int num_grid_line;
@@ -230,13 +234,38 @@ public class GL_Manager implements Runnable{
 				// change shader *****************************
 				this.DRAW_GRID_LINE();
 
+				
 				// draw STL file
+				GL46.glUseProgram(PRG_STL);
+				GL46.glUniformMatrix4fv(UNF_STL_mvpMatrix, false, mat_obj.getMatrix());
+				GL46.glUniformMatrix4fv(UNF_STL_rotateMatrix, false, lookMat_obj.getMatrix());
 				
 				// get num STL
 				int numSTL = ParamHolder.stl_Array.size();
 				for( int s = 0 ; s < numSTL ; s++ )
 				{
+					// set color
+					if( s == ParamHolder.SELECTED_STL_ID )
+					{
+						GL46.glUniform4f(UNF_STL_singleColor, 1.0f, 0.2f, 1.0f, 1.0f);
+					}
+					else
+					{
+						GL46.glUniform4f(UNF_STL_singleColor, 0.2f, 1.0f, 1.0f, 1.0f);
+					}
 					
+					STL_Class targetSTL = ParamHolder.stl_Array.get(s);
+					GL46.glBindVertexArray(VAO_STL);
+					// update vert
+					GL46.glBindBuffer(GL46.GL_ARRAY_BUFFER, VBO_STL_VERT);
+					GL46.glBufferData(GL46.GL_ARRAY_BUFFER, targetSTL.vert, GL46.GL_DYNAMIC_DRAW);
+					GL46.glVertexAttribPointer(0, 3, GL46.GL_FLOAT, false, 0, 0);
+					// update norm
+					GL46.glBindBuffer(GL46.GL_ARRAY_BUFFER, VBO_STL_NORM);
+					GL46.glBufferData(GL46.GL_ARRAY_BUFFER, targetSTL.norm, GL46.GL_DYNAMIC_DRAW);
+					GL46.glVertexAttribPointer(1, 3, GL46.GL_FLOAT, false, 0, 0);
+					
+					GL46.glDrawArrays(GL46.GL_TRIANGLES, 0, targetSTL.num_of_triangles * 3);
 				}
 				
 				
@@ -527,6 +556,13 @@ public class GL_Manager implements Runnable{
 		PRG_LINE = ShaderClass.createProgram_And_AttachShader(VS_LINE, -1, FS_LINE);
 		UNF_single_mvpMatrix = ShaderClass.getUniformLocation(PRG_LINE, "mvpMatrix");
 		UNF_singleColor = ShaderClass.getUniformLocation(PRG_LINE, "singleColor");
+	
+		VS_STL = ShaderClass.loadShaderSource_And_Compile("SHADER/VS_STL.txt", 0);
+		FS_STL = ShaderClass.loadShaderSource_And_Compile("SHADER/FS_STL.txt", 2);
+		PRG_STL = ShaderClass.createProgram_And_AttachShader(VS_STL, -1, FS_STL);
+		UNF_STL_mvpMatrix = ShaderClass.getUniformLocation(PRG_STL, "mvpMatrix");
+		UNF_STL_singleColor = ShaderClass.getUniformLocation(PRG_STL, "singleColor");
+		UNF_STL_rotateMatrix = ShaderClass.getUniformLocation(PRG_STL, "rotateMatrix");
 	}
 	
 	
@@ -541,6 +577,12 @@ public class GL_Manager implements Runnable{
 		
 		// for STL objects
 		VAO_STL = GL46.glGenVertexArrays();
+		VBO_STL_VERT = GL46.glGenBuffers();
+		VBO_STL_NORM = GL46.glGenBuffers();
+		
+		GL46.glBindVertexArray(VAO_STL);
+		GL46.glEnableVertexAttribArray(0);
+		GL46.glEnableVertexAttribArray(1);
 		
 		GL46.glBindVertexArray(0);
 	}

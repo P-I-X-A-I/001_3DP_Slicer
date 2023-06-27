@@ -22,6 +22,8 @@ public class ParamHolder {
 	public static ArrayList<STL_Class> stl_Array = new ArrayList<STL_Class>();
 	public static ArrayList<String> stl_Names = new ArrayList<String>();
 	
+	// selected STL
+	public static int SELECTED_STL_ID = -1;
 	
 	public ParamHolder()
 	{

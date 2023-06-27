@@ -19,20 +19,20 @@ public class STL_Class {
 	float obj_depth = 0.0f;
 	
 	
-	float[] vert;// alloc later
-	float[] norm;// alloc later
+	public float[] vert;// alloc later
+	public float[] norm;// alloc later
 	
 	FloatBuffer vertBuffer;
 	FloatBuffer normBuffer;
 	
-	float bound_min_x = 10000.0f;
-	float bound_min_y = 10000.0f;
-	float bound_min_z = 10000.0f;
-	float bound_max_x = -10000.0f;
-	float bound_max_y = -10000.0f;
-	float bound_max_z = -10000.0f;
-	float shift_x = 0.0f;
-	float shift_y = 0.0f;
+	public float bound_min_x = 10000.0f;
+	public float bound_min_y = 10000.0f;
+	public float bound_min_z = 10000.0f;
+	public float bound_max_x = -10000.0f;
+	public float bound_max_y = -10000.0f;
+	public float bound_max_z = -10000.0f;
+	public float shift_x = 0.0f;
+	public float shift_y = 0.0f;
 	
 	// constructor
 	public STL_Class(String filePath) throws IOException

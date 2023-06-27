@@ -2,6 +2,8 @@
 
 // in
 in vec3 normal_vs;
+in vec3 light_vs;
+in float specular;
 
 // out
 layout (location = 0) out vec4 fragColor;
@@ -11,5 +13,11 @@ uniform vec4 singleColor;
 
 void main()
 {
-	fragColor = singleColor;
+	float luminance = dot( normal_vs, light_vs);
+	luminance = luminance*0.4 + 0.6;
+	
+	fragColor = vec4(singleColor.r * luminance + specular,
+					 singleColor.g * luminance + specular,
+					 singleColor.b * luminance + specular,
+					 singleColor.a);
 }
