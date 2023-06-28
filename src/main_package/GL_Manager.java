@@ -31,6 +31,7 @@ public class GL_Manager implements Runnable{
 	int UNF_STL_mvpMatrix;
 	int UNF_STL_singleColor;
 	int UNF_STL_rotateMatrix;
+	int UNF_STL_shiftPos;
 	
 	// VAO VBO
 	int VAO_LINE;
@@ -255,6 +256,14 @@ public class GL_Manager implements Runnable{
 					}
 					
 					STL_Class targetSTL = ParamHolder.stl_Array.get(s);
+					
+					// set shift z
+					GL46.glUniform3f(UNF_STL_shiftPos,
+										targetSTL.shift_x,
+										targetSTL.shift_y,
+										targetSTL.shift_z);
+					
+					
 					GL46.glBindVertexArray(VAO_STL);
 					// update vert
 					GL46.glBindBuffer(GL46.GL_ARRAY_BUFFER, VBO_STL_VERT);
@@ -381,7 +390,7 @@ public class GL_Manager implements Runnable{
 		GLFW.glfwWindowHint(GLFW.GLFW_VISIBLE, GLFW.GLFW_FALSE);
 		GLFW.glfwWindowHint(GLFW.GLFW_RESIZABLE, GLFW.GLFW_FALSE);
 		GLFW.glfwWindowHint(GLFW.GLFW_DECORATED, GLFW.GLFW_TRUE);
-		
+		GLFW.glfwWindowHint(GLFW.GLFW_SAMPLES, 4);
 		
 		// create window
 		h_mainWnd = GLFW.glfwCreateWindow(800, 600, "3DP-Slicer", 0, 0);
@@ -526,6 +535,10 @@ public class GL_Manager implements Runnable{
 		GL46.glEnable(GL46.GL_DEPTH_TEST);
 		GL46.glDepthFunc(GL46.GL_LESS);
 		
+		// antialiasing
+		GL46.glEnable(GL46.GL_POLYGON_SMOOTH);
+		GL46.glEnable(GL46.GL_LINE_SMOOTH);
+		
 		// point size
 		GL46.glEnable(GL46.GL_PROGRAM_POINT_SIZE);
 	}
@@ -563,6 +576,7 @@ public class GL_Manager implements Runnable{
 		UNF_STL_mvpMatrix = ShaderClass.getUniformLocation(PRG_STL, "mvpMatrix");
 		UNF_STL_singleColor = ShaderClass.getUniformLocation(PRG_STL, "singleColor");
 		UNF_STL_rotateMatrix = ShaderClass.getUniformLocation(PRG_STL, "rotateMatrix");
+		UNF_STL_shiftPos = ShaderClass.getUniformLocation(PRG_STL, "shiftPos");
 	}
 	
 	

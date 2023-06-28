@@ -33,6 +33,7 @@ public class STL_Class {
 	public float bound_max_z = -10000.0f;
 	public float shift_x = 0.0f;
 	public float shift_y = 0.0f;
+	public float shift_z = 0.0f; // = -(bound_min_z)
 	
 	// constructor
 	public STL_Class(String filePath) throws IOException
@@ -182,6 +183,8 @@ public class STL_Class {
 		bound_max_y -= tempY;	bound_min_y -= tempY;
 		bound_max_z -= tempZ;	bound_min_z -= tempZ;
 		
+		// shift-z
+		shift_z = -bound_min_z;
 	}
 
 	///////////////////////////////////////////

@@ -64,6 +64,7 @@ public class GUI_Manager implements ActionListener{
 		// printer combobox
 		String[] printers = {"printer-1", "printer-2", "printer-3"};
 		JComboBox<String> combo_obj = new JComboBox<>(printers);
+		combo_obj.setFocusable(false);
 		paramWindow.getContentPane().add(combo_obj);
 		combo_obj.setBounds(10, 40, 170, 20);
 		combo_obj.addActionListener(e->{
@@ -80,6 +81,8 @@ public class GUI_Manager implements ActionListener{
 		
 		JButton BT_load = new JButton("Load");
 		JButton BT_delete = new JButton("Delete");
+		BT_load.setFocusable(false);
+		BT_delete.setFocusable(false);
 		paramWindow.getContentPane().add(BT_load);
 		paramWindow.getContentPane().add(BT_delete);
 		BT_load.setBounds(10, 110, 80, 20);
@@ -100,7 +103,10 @@ public class GUI_Manager implements ActionListener{
 		*/
 		ListView_STL = new JList<>(ListModel);
 		ListView_STL.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		ListView_STL.setFocusable(false);
+		
 		JScrollPane scroll_obj = new JScrollPane(ListView_STL);
+		scroll_obj.setFocusable(false);
 		paramWindow.getContentPane().add(scroll_obj);
 		scroll_obj.setBounds(10, 140, 170, 100);
 		
@@ -129,6 +135,8 @@ public class GUI_Manager implements ActionListener{
 		
 		JButton BT_plus45 = new JButton("+45");
 		JButton BT_minus45 = new JButton("-45");
+		BT_plus45.setFocusable(false);
+		BT_minus45.setFocusable(false);
 		paramWindow.getContentPane().add(BT_plus45);
 		paramWindow.getContentPane().add(BT_minus45);
 		BT_plus45.setBounds(10, 285, 80, 20);
@@ -143,10 +151,14 @@ public class GUI_Manager implements ActionListener{
 		JRadioButton RD_y = new JRadioButton("y");
 		JRadioButton RD_z = new JRadioButton("z");
 		ButtonGroup RD_group = new ButtonGroup();
+		RD_x.setFocusable(false);
+		RD_y.setFocusable(false);
+		RD_z.setFocusable(false);
 		RD_group.add(RD_x);
 		RD_group.add(RD_y);
 		RD_group.add(RD_z);
 		RD_x.setSelected(true);
+		
 		
 		paramWindow.getContentPane().add(RD_x);
 		paramWindow.getContentPane().add(RD_y);
@@ -177,6 +189,7 @@ public class GUI_Manager implements ActionListener{
 		
 		// layer height
 		SLI_layer_height = new JSlider(0, 5, 2);
+		SLI_layer_height.setFocusable(false);
 		SLI_layer_height.setPaintTicks(true);
 		SLI_layer_height.setSnapToTicks(true);
 		SLI_layer_height.setMajorTickSpacing(1);
@@ -200,6 +213,7 @@ public class GUI_Manager implements ActionListener{
 		LB_perimeter.setBounds(220, 70, 200, 20);
 		
 		SLI_perimeters = new JSlider(0, 4, 1);
+		SLI_perimeters.setFocusable(false);
 		SLI_perimeters.setPaintTicks(true);
 		SLI_perimeters.setSnapToTicks(true);
 		SLI_perimeters.setMajorTickSpacing(1);
@@ -225,6 +239,7 @@ public class GUI_Manager implements ActionListener{
 		LB_fill.setBounds(220, 130, 200, 20);
 		
 		SLI_infill = new JSlider(0, 10, 3);
+		SLI_infill.setFocusable(false);
 		SLI_infill.setPaintTicks(true);
 		SLI_infill.setSnapToTicks(true);
 		SLI_infill.setMajorTickSpacing(1);
@@ -253,6 +268,9 @@ public class GUI_Manager implements ActionListener{
 		RD_gyroid = new JRadioButton("Gyroid");
 		ButtonGroup pattern_group = new ButtonGroup();
 		
+		RD_grid.setFocusable(false);
+		RD_honeycomb.setFocusable(false);
+		RD_gyroid.setFocusable(false);
 		pattern_group.add(RD_grid);
 		pattern_group.add(RD_honeycomb);
 		pattern_group.add(RD_gyroid);
@@ -268,11 +286,13 @@ public class GUI_Manager implements ActionListener{
 		
 		// raft, support
 		CHK_support = new JCheckBox("support");
+		CHK_support.setFocusable(false);
 		CHK_support.setSelected(false);
 		paramWindow.getContentPane().add(CHK_support);
 		CHK_support.setBounds(210, 260, 80, 20);
 		
 		CHK_raft = new JCheckBox("raft");
+		CHK_raft.setFocusable(false);
 		CHK_raft.setSelected(false);
 		paramWindow.getContentPane().add(CHK_raft);
 		CHK_raft.setBounds(300, 260, 80, 20);
@@ -284,6 +304,7 @@ public class GUI_Manager implements ActionListener{
 		LB_temp.setBounds(220, 290, 200, 20);
 		
 		SLI_temperature = new JSlider(0, 10, 4);
+		SLI_temperature.setFocusable(false);
 		SLI_temperature.setPaintTicks(true);
 		SLI_temperature.setSnapToTicks(true);
 		SLI_temperature.setMajorTickSpacing(1);
@@ -305,6 +326,7 @@ public class GUI_Manager implements ActionListener{
 		
 		// convert button
 		JButton BT_conv = new JButton("convert");
+		BT_conv.setFocusable(false);
 		paramWindow.getContentPane().add(BT_conv);
 		BT_conv.setBounds(125, 375, 150, 20);
 		BT_conv.setActionCommand("convert");
@@ -317,12 +339,19 @@ public class GUI_Manager implements ActionListener{
 			@Override
 			public void keyTyped(KeyEvent e) {
 				// TODO Auto-generated method stub
+				//System.out.println("key typed " + e.getKeyCode());
 			}
 
 			@Override
 			public void keyPressed(KeyEvent e) {
 				// TODO Auto-generated method stub
-				System.out.println("GUI key:"+e.getKeyCode());
+				int code = e.getKeyCode();
+				//System.out.println("GUI key:"+e.getKeyCode());
+				// 37 - left
+				// 38 - up
+				// 39 - right
+				// 40 - down
+				
 			}
 
 			@Override
@@ -335,7 +364,6 @@ public class GUI_Manager implements ActionListener{
 		};
 		
 		paramWindow.addKeyListener(keyL);
-		
 	} // constructor
 
 	

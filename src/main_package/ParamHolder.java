@@ -29,4 +29,12 @@ public class ParamHolder {
 	{
 		System.out.println("ParamHolder init");
 	}
+	
+	public static void arrowKeyPressed(int code)
+	{
+		if( SELECTED_STL_ID != -1)
+		{
+			
+		}
+	}
 }

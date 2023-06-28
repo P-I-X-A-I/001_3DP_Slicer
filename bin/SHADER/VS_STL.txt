@@ -13,10 +13,12 @@ out float specular;
 // UNF
 uniform mat4 mvpMatrix;
 uniform mat4 rotateMatrix;
+uniform vec3 shiftPos;
 
 void main()
 {
-	vec4 pos4 = vec4(position, 1.0);
+	vec4 pos4 = vec4(position + shiftPos, 1.0);
+					 
 	vec4 tempPos = mvpMatrix * pos4;
 	gl_Position = tempPos;
 
