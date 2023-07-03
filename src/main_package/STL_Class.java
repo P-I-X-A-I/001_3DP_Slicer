@@ -5,7 +5,11 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 
+import javax.swing.SwingUtilities;
+
+
 public class STL_Class {
+	
 	
 	// variables
 	String file_path_str;
@@ -19,11 +23,13 @@ public class STL_Class {
 	float obj_depth = 0.0f;
 	
 	
-	public float[] vert;// alloc later
-	public float[] norm;// alloc later
+	public volatile float[] vert;// alloc later
+	public volatile float[] norm;// alloc later
+	public volatile float[] vert_cp;
+	public volatile float[] norm_cp;
+	public boolean isAccesible = true;
 	
-	FloatBuffer vertBuffer;
-	FloatBuffer normBuffer;
+
 	
 	public float bound_min_x = 10000.0f;
 	public float bound_min_y = 10000.0f;
@@ -34,6 +40,13 @@ public class STL_Class {
 	public float shift_x = 0.0f;
 	public float shift_y = 0.0f;
 	public float shift_z = 0.0f; // = -(bound_min_z)
+	
+	volatile float[] matX = new float[9];
+	volatile float[] matY = new float[9];
+	volatile float[] matZ = new float[9];
+	volatile float[] tmpM = new float[9];
+	volatile float[] matN = new float[9];
+	
 	
 	// constructor
 	public STL_Class(String filePath) throws IOException
@@ -79,7 +92,9 @@ public class STL_Class {
 			
 			// alloc memory
 			vert = new float[num_of_triangles * 3 * 3]; // xyz * 3v
-			norm = new float[num_of_triangles * 3 * 3]; 
+			norm = new float[num_of_triangles * 3 * 3];
+			vert_cp = new float[num_of_triangles * 3 * 3];
+			norm_cp = new float[num_of_triangles * 3 * 3];
 			
 			//************************************************
 			// read data from wholeBuffer
@@ -101,21 +116,18 @@ public class STL_Class {
 				float vY = wholeBuffer.getFloat();
 				float vZ = wholeBuffer.getFloat();
 				vert[vID+0] = vX;	vert[vID+1] = vY;	vert[vID+2] = vZ;
-				this.check_boundings(vX, vY, vZ);
 				
 				// set vertex 2
 				vX = wholeBuffer.getFloat();
 				vY = wholeBuffer.getFloat();
 				vZ = wholeBuffer.getFloat();
 				vert[vID+3] = vX;	vert[vID+4] = vY;	vert[vID+5] = vZ;
-				this.check_boundings(vX, vY, vZ);
 
 				// set vertex 3
 				vX = wholeBuffer.getFloat();
 				vY = wholeBuffer.getFloat();
 				vZ = wholeBuffer.getFloat();
 				vert[vID+6] = vX;	vert[vID+7] = vY;	vert[vID+8] = vZ;
-				this.check_boundings(vX, vY, vZ);
 
 				// skip 2 byte
 				int pos = wholeBuffer.position();
@@ -123,18 +135,19 @@ public class STL_Class {
 				wholeBuffer.position(pos);
 			}// for
 			
+			// check boundings
+			this.check_boundings_loop();
+			
 			// close stream
 			fp.close();
 			
 			// set valid flag
 			isValid = true;
 			
-			// create wrap FloatBuffer
-			vertBuffer = FloatBuffer.wrap(vert);
-			normBuffer = FloatBuffer.wrap(norm);
 			
 			// decide centerpoint
-			this.move_center_to_origin();
+			this.move_center_to_origin(); // must be set
+			this.copy_vert_norm(); // must be set
 			
 			
 		} catch (FileNotFoundException e) {
@@ -162,6 +175,32 @@ public class STL_Class {
 		if( bound_min_z > z ) { bound_min_z = z;}
 	}
 	
+	private void check_boundings_loop()
+	{
+		// reset bounding box
+		bound_max_x = -10000.0f;	bound_min_x = 10000.0f;
+		bound_max_y = -10000.0f;	bound_min_y = 10000.0f;
+		bound_max_z = -10000.0f;	bound_min_z = 10000.0f;
+		
+		int iter = num_of_triangles*3;
+		
+		for( int i = 0 ; i < iter ; i++ )
+		{
+			int ID = i*3;
+			float X = vert[ID];
+			float Y = vert[ID+1];
+			float Z = vert[ID+2];
+			
+			if( bound_max_x < X) { bound_max_x = X; }
+			if( bound_max_y < Y) { bound_max_y = Y; }
+			if( bound_max_z < Z) { bound_max_z = Z; }
+			
+			if( bound_min_x > X) { bound_min_x = X; }
+			if( bound_min_y > Y) { bound_min_y = Y; }
+			if( bound_min_z > Z) { bound_min_z = Z; }
+		}
+	}
+	
 	private void move_center_to_origin()
 	{
 		float tempX = (bound_max_x + bound_min_x)/2.0f;
@@ -169,7 +208,10 @@ public class STL_Class {
 		float tempZ = (bound_max_z + bound_min_z)/2.0f;
 		
 		// shift all vertex
+		
+		
 		int num_vert = num_of_triangles * 3;
+		
 		for( int i = 0 ; i < num_vert ; i++ )
 		{
 			int ID = i*3;
@@ -187,30 +229,34 @@ public class STL_Class {
 		shift_z = -bound_min_z;
 	}
 
+	
+	private void copy_vert_norm()
+	{
+		int iter = num_of_triangles *3 * 3;
+		for( int i = 0 ; i < iter ; i++ )
+		{
+			vert_cp[i] = vert[i];
+			norm_cp[i] = norm[i];
+		}
+	}
+	
 	///////////////////////////////////////////
 	//////// Transformation ///////////////////
 	///////////////////////////////////////////
 	
 	void rotateXYZ(float xDeg, float yDeg, float zDeg)
 	{
+		// as fence
+		isAccesible = false;
+		
+		
 		// convert to radian
 		float radX = xDeg * 0.0174532925f;
 		float radY = yDeg * 0.0174532925f;
 		float radZ = zDeg * 0.0174532925f;
 		
-		// reset bounding box
-		bound_max_x = -10000.0f;	bound_min_x = 10000.0f;
-		bound_max_y = -10000.0f;	bound_min_y = 10000.0f;
-		bound_max_z = -10000.0f;	bound_min_z = 10000.0f;
 		
 		// create matrix
-		float[] matX = new float[9];
-		float[] matY = new float[9];
-		float[] matZ = new float[9];
-		float[] tmpM = new float[9];
-		float[] matN = new float[9];
-		
-		
 		float cosX = (float)Math.cos(radX);
 		float sinX = (float)Math.sin(radX);
 		matX[0] = 1.0f;	matX[3] = 0.0f;	matX[6] = 0.0f;
@@ -257,32 +303,29 @@ public class STL_Class {
 
 		
 		// rotate vertex & normal
-		int iter = num_of_triangles *3;
-		float tX, tY, tZ;
-		float nX, nY, nZ;
+		int iter = num_of_triangles * 3;
+
+		
 		for( int i = 0 ; i < iter ; i++ )
 		{
 			int ID = i*3;
-			tX = vert[ID];
-			tY = vert[ID+1];
-			tZ = vert[ID+2];
-			nX = norm[ID];
-			nY = norm[ID+1];
-			nZ = norm[ID+2];
 			
-			// update
-			vert[ID] = matN[0]*tX + matN[1]*tY + matN[2]*tZ;
-			vert[ID+1] = matN[3]*tX + matN[4]*tY + matN[5]*tZ;
-			vert[ID+2] = matN[6]*tX + matN[7]*tY + matN[8]*tZ;
+			vert[ID+0] = matN[0]*vert_cp[ID+0] + matN[1]*vert_cp[ID+1] + matN[2]*vert_cp[ID+2];
+			vert[ID+1] = matN[3]*vert_cp[ID+0] + matN[4]*vert_cp[ID+1] + matN[5]*vert_cp[ID+2];
+			vert[ID+2] = matN[6]*vert_cp[ID+0] + matN[7]*vert_cp[ID+1] + matN[8]*vert_cp[ID+2];
 			
-			norm[ID] = matN[0]*nX + matN[1]*nY + matN[2]*nZ;
-			norm[ID+1] = matN[3]*nX + matN[4]*nY + matN[5]*nZ;
-			norm[ID+2] = matN[6]*nX + matN[7]*nY + matN[8]*nZ;
-			
-			this.check_boundings(vert[ID], vert[ID+1], vert[ID+2]);
+			norm[ID+0] = matN[0]*norm_cp[ID+0] + matN[1]*norm_cp[ID+1] + matN[2]*norm_cp[ID+2];
+			norm[ID+1] = matN[3]*norm_cp[ID+0] + matN[4]*norm_cp[ID+1] + matN[5]*norm_cp[ID+2];
+			norm[ID+2] = matN[6]*norm_cp[ID+0] + matN[7]*norm_cp[ID+1] + matN[8]*norm_cp[ID+2];
 		}
+		this.check_boundings_loop();
 		
-		this.move_center_to_origin();
+		this.move_center_to_origin();  // must be set
+		this.copy_vert_norm(); // must be set
+		
+		// like fence
+		isAccesible = true;
+		
 	}
 	
 	

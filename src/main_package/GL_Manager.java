@@ -18,6 +18,7 @@ public class GL_Manager implements Runnable{
 	matrixClass mat_obj = new matrixClass();
 	matrixClass lookMat_obj = new matrixClass();
 	
+	
 	// shader
 	int VS_LINE;
 	int FS_LINE;
@@ -46,6 +47,9 @@ public class GL_Manager implements Runnable{
 	float[] bed_B;
 	float[] bed_C;
 	float[] draw_bed_v;
+	float bed_x = 0.0f;
+	float bed_y = 0.0f;
+	float bed_z = 0.0f;
 	
 	// view point
 	float[] eyeVec = new float[3];
@@ -106,7 +110,7 @@ public class GL_Manager implements Runnable{
 		
 		bed_A[ID] = -endX;	ID++;
 		bed_A[ID] = -endY;	ID++;
-		bed_A[ID] = 30.0f;	ID++;
+		bed_A[ID] = (float)ParamHolder.A_Z;	ID++;
 		
 		
 		/// B
@@ -151,7 +155,7 @@ public class GL_Manager implements Runnable{
 		
 		bed_B[ID] = -endX;	ID++;
 		bed_B[ID] = -endY;	ID++;
-		bed_B[ID] = 30.0f;	ID++;
+		bed_B[ID] = (float)ParamHolder.B_Z;	ID++;
 		
 		/// C
 		iterX = ParamHolder.C_X / 10;
@@ -194,7 +198,7 @@ public class GL_Manager implements Runnable{
 		
 		bed_C[ID] = -endX;	ID++;
 		bed_C[ID] = -endY;	ID++;
-		bed_C[ID] = 30.0f;	ID++;
+		bed_C[ID] = (float)ParamHolder.C_Z;	ID++;
 		
 	}
 	
@@ -215,10 +219,10 @@ public class GL_Manager implements Runnable{
 			
 			this.CHECK_PRINTER();
 
-			if(diff > 33 )
+			if( diff > 33 && ParamHolder.isRender )
 			{
 				// clear buffer ******************************
-				GL46.glViewport(0, 0, 800, 600);
+				GL46.glViewport(0, 0, (int)ParamHolder.GL_WIN_WIDTH, (int)ParamHolder.GL_WIN_HEIGHT);
 				GL46.glClearColor(0.9f, 0.9f, 0.9f, 1.0f);
 				GL46.glClear(GL46.GL_COLOR_BUFFER_BIT | GL46.GL_DEPTH_BUFFER_BIT);
 			
@@ -230,60 +234,30 @@ public class GL_Manager implements Runnable{
 				mat_obj.lookAt(eyeVec[0], eyeVec[1], eyeVec[2], 
 								0.0f, 0.0f, targetVec[2], 
 								headVec[0], headVec[1], headVec[2]);
-				mat_obj.perspective(75.0f, 800.0f/600.0f, 0.01f, 1000.0f);
+				mat_obj.perspective(75.0f,
+									ParamHolder.GL_WIN_RATIO, 0.01f, 1000.0f);
 				
 				// change shader *****************************
 				this.DRAW_GRID_LINE();
 
 				
-				// draw STL file
+				// draw STL file *****************************
 				GL46.glUseProgram(PRG_STL);
 				GL46.glUniformMatrix4fv(UNF_STL_mvpMatrix, false, mat_obj.getMatrix());
 				GL46.glUniformMatrix4fv(UNF_STL_rotateMatrix, false, lookMat_obj.getMatrix());
 				
-				// get num STL
-				int numSTL = ParamHolder.stl_Array.size();
-				for( int s = 0 ; s < numSTL ; s++ )
-				{
-					// set color
-					if( s == ParamHolder.SELECTED_STL_ID )
-					{
-						GL46.glUniform4f(UNF_STL_singleColor, 1.0f, 0.2f, 1.0f, 1.0f);
-					}
-					else
-					{
-						GL46.glUniform4f(UNF_STL_singleColor, 0.2f, 1.0f, 1.0f, 1.0f);
-					}
-					
-					STL_Class targetSTL = ParamHolder.stl_Array.get(s);
-					
-					// set shift z
-					GL46.glUniform3f(UNF_STL_shiftPos,
-										targetSTL.shift_x,
-										targetSTL.shift_y,
-										targetSTL.shift_z);
-					
-					
-					GL46.glBindVertexArray(VAO_STL);
-					// update vert
-					GL46.glBindBuffer(GL46.GL_ARRAY_BUFFER, VBO_STL_VERT);
-					GL46.glBufferData(GL46.GL_ARRAY_BUFFER, targetSTL.vert, GL46.GL_DYNAMIC_DRAW);
-					GL46.glVertexAttribPointer(0, 3, GL46.GL_FLOAT, false, 0, 0);
-					// update norm
-					GL46.glBindBuffer(GL46.GL_ARRAY_BUFFER, VBO_STL_NORM);
-					GL46.glBufferData(GL46.GL_ARRAY_BUFFER, targetSTL.norm, GL46.GL_DYNAMIC_DRAW);
-					GL46.glVertexAttribPointer(1, 3, GL46.GL_FLOAT, false, 0, 0);
-					
-					GL46.glDrawArrays(GL46.GL_TRIANGLES, 0, targetSTL.num_of_triangles * 3);
-				}
+				this.draw_STLs();
 				
+	
 				
+				// finish command & swap buffer
 				GL46.glFlush();
 				GLFW.glfwSwapBuffers(h_mainWnd);
 
 				// set time
 				prevTime = curTime;
-			}
+				
+			} // is render
 			
 			//*****************************************************
 			//*****************************************************
@@ -305,20 +279,29 @@ public class GL_Manager implements Runnable{
 		case 0:
 			targetVec[0] = 0.0f;
 			targetVec[1] = 0.0f;
-			targetVec[2] = (float)(ParamHolder.A_Z/3);
+			targetVec[2] = (float)(ParamHolder.A_Z/4);
 			draw_bed_v = bed_A;
+			bed_x = ParamHolder.A_X / 2.0f;
+			bed_y = ParamHolder.A_Y / 2.0f;
+			bed_z = (float)ParamHolder.A_Z;
 			break;
 		case 1:
 			targetVec[0] = 0.0f;
 			targetVec[1] = 0.0f;
-			targetVec[2] = (float)(ParamHolder.B_Z/3);
+			targetVec[2] = (float)(ParamHolder.B_Z/4);
 			draw_bed_v = bed_B;
+			bed_x = ParamHolder.B_X / 2.0f;
+			bed_y = ParamHolder.B_Y / 2.0f;
+			bed_z = (float)ParamHolder.B_Z;
 			break;
 		case 2:
 			targetVec[0] = 0.0f;
 			targetVec[1] = 0.0f;
-			targetVec[2] = (float)(ParamHolder.C_Z/3);
+			targetVec[2] = (float)(ParamHolder.C_Z/4);
 			draw_bed_v = bed_C;
+			bed_x = ParamHolder.C_X / 2.0f;
+			bed_y = ParamHolder.C_Y / 2.0f;
+			bed_z = (float)ParamHolder.C_Z;
 			break;
 		default:
 			
@@ -326,13 +309,13 @@ public class GL_Manager implements Runnable{
 		}
 	}
 	
-	
+	//*************************************************************
 	
 	void SET_VIEW_POINT()
 	{
 		acc_eyeLength *= 0.5;
 		eyeLength += acc_eyeLength; // 100 ~ 500
-		if( eyeLength < 200.0f) { eyeLength = 200.0f; }
+		if( eyeLength < 100.0f) { eyeLength = 100.0f; }
 		else if( eyeLength > 500.0f) { eyeLength = 500.0f; }
 		
 		eyeVec[0] = 0.0f;	eyeVec[1] = -eyeLength;		eyeVec[2] = 0.0f;
@@ -350,6 +333,8 @@ public class GL_Manager implements Runnable{
 		lookMat_obj.calculateVec3(headVec);
 	}
 	
+	//******************************************************
+	
 	void DRAW_GRID_LINE()
 	{
 		GL46.glUseProgram(PRG_LINE);
@@ -365,9 +350,85 @@ public class GL_Manager implements Runnable{
 		GL46.glDrawArrays(GL46.GL_LINES, 0, draw_bed_v.length/3);
 	}
 	
+	//*********************************************************
 	
-	
+	private void draw_STLs()
+	{
+		// get num STL
+		int numSTL = ParamHolder.stl_Array.size();
+		for( int s = 0 ; s < numSTL ; s++ )
+		{
+			STL_Class targetSTL = ParamHolder.stl_Array.get(s);
+			
+			if(targetSTL.isAccesible)
+			{
+			
+			// check if in range ************************************
+			boolean isInRange = true;
+			
+			// x range
+			if( bed_x <= (targetSTL.bound_max_x + targetSTL.shift_x))
+			{ isInRange = false; }
+			else if( (-bed_x) > (targetSTL.bound_min_x + targetSTL.shift_x))
+			{ isInRange = false;}
+			
+			// y range
+			if( bed_y <= (targetSTL.bound_max_y + targetSTL.shift_y))
+			{ isInRange = false; }
+			else if((-bed_y) > (targetSTL.bound_min_y + targetSTL.shift_y))
+			{ isInRange = false; }
+			
+			// z range
+			if(bed_z <= (targetSTL.bound_max_z - targetSTL.bound_min_z))
+			{ isInRange = false;}
+			
+			//*******************************************************
+			
+			// set color
+			if( s == ParamHolder.SELECTED_STL_ID)
+			{
+				GL46.glUniform4f(UNF_STL_singleColor, 1.0f, 0.2f, 1.0f, 1.0f);
+			}
+			else
+			{
+				GL46.glUniform4f(UNF_STL_singleColor, 0.2f, 1.0f, 1.0f, 1.0f);
+			}
+			
+			if(isInRange == false)
+			{
+				GL46.glUniform4f(UNF_STL_singleColor, 0.2f, 0.2f, 0.2f, 1.0f);
+			}
 
+			
+			
+			// set shift z
+
+			GL46.glUniform3f(UNF_STL_shiftPos,
+								targetSTL.shift_x,
+								targetSTL.shift_y,
+								targetSTL.shift_z);
+			
+			
+			GL46.glBindVertexArray(VAO_STL);
+			// update vert
+
+			GL46.glBindBuffer(GL46.GL_ARRAY_BUFFER, VBO_STL_VERT);
+			GL46.glBufferData(GL46.GL_ARRAY_BUFFER, targetSTL.vert_cp, GL46.GL_DYNAMIC_DRAW);
+			GL46.glVertexAttribPointer(0, 3, GL46.GL_FLOAT, false, 0, 0);
+			// update norm
+			GL46.glBindBuffer(GL46.GL_ARRAY_BUFFER, VBO_STL_NORM);
+			GL46.glBufferData(GL46.GL_ARRAY_BUFFER, targetSTL.norm_cp, GL46.GL_DYNAMIC_DRAW);
+			GL46.glVertexAttribPointer(1, 3, GL46.GL_FLOAT, false, 0, 0);
+			
+			GL46.glDrawArrays(GL46.GL_TRIANGLES, 0, targetSTL.num_of_triangles * 3);
+			
+			} // is accesible ( as fence )
+		} // for s
+	}
+	
+	
+	//*********************************************************
+	
 	@Override
 	public void run() {
 		// TODO Auto-generated method stub
@@ -393,13 +454,45 @@ public class GL_Manager implements Runnable{
 		GLFW.glfwWindowHint(GLFW.GLFW_SAMPLES, 4);
 		
 		// create window
-		h_mainWnd = GLFW.glfwCreateWindow(800, 600, "3DP-Slicer", 0, 0);
+		h_mainWnd = GLFW.glfwCreateWindow((int)ParamHolder.GL_WIN_WIDTH,
+											(int)ParamHolder.GL_WIN_HEIGHT,
+											"3DP-Slicer", 0, 0);
 		
 		// set key callback********************************************
 		GLFW.glfwSetKeyCallback(h_mainWnd, (window, key, scancode, action, mods)->{
 			
 			// define key event
-			System.out.println("GL key"+key);
+			System.out.println("GL key"+key+"/"+mods + "/" + action);
+			// mods == 1, shift pushed
+			// left = 263
+			// up = 265
+			// right = 262
+			// down = 264
+			int shiftMods = 0;
+			if( mods == 1 )
+			{
+				shiftMods = 100;
+			}
+			
+			if( action == 1 ) // when pushed
+			{
+				switch(key)
+				{
+				case 263:
+					ParamHolder.arrowKeyPressed(0 + shiftMods);
+					break;
+				case 265:
+					ParamHolder.arrowKeyPressed(1 + shiftMods);
+					break;
+				case 262:
+					ParamHolder.arrowKeyPressed(2 + shiftMods);
+					break;
+				case 264:
+					ParamHolder.arrowKeyPressed(3 + shiftMods);
+					break;
+				}
+			}
+			
 			if(key == GLFW.GLFW_KEY_ESCAPE && action == GLFW.GLFW_RELEASE)
 			{
 				GLFW.glfwSetWindowShouldClose(h_mainWnd, true);
@@ -445,7 +538,7 @@ public class GL_Manager implements Runnable{
 				// calcurate delta
 				float deltaX = prev_mouse_X - (float)xpos;
 				float deltaY = prev_mouse_Y - (float)ypos;
-				System.out.println(deltaX + "/" + deltaY);
+				//System.out.println(deltaX + "/" + deltaY);
 				
 				// rotate view axis
 				acc_rot_X += deltaY * 0.15f;
@@ -462,14 +555,14 @@ public class GL_Manager implements Runnable{
 		
 		// set cursor enter callback ***********************************
 		GLFW.glfwSetCursorEnterCallback(h_mainWnd, (window, entered)->{
-			System.out.println("Entered/"+entered);
+			//System.out.println("Entered/"+entered);
 		});
 		
 		// set scroll callback
 		GLFW.glfwSetScrollCallback(h_mainWnd, (window, xoffset, yoffset)->{
 			
 			//System.out.println("x"+xoffset+"Y"+yoffset);
-			acc_eyeLength -= (float)yoffset*5.0f;
+			acc_eyeLength -= (float)yoffset*10.0f;
 		});
 		
 		//GLFW.glfwSetWindowRefreshCallback(h_mainWnd, (window)->{});

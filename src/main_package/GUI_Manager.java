@@ -6,7 +6,14 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.io.DataOutputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 
 import javax.swing.*;
@@ -14,8 +21,10 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
+import java.io.File;
 
 
 public class GUI_Manager implements ActionListener{
@@ -27,6 +36,11 @@ public class GUI_Manager implements ActionListener{
 	public JSlider SLI_perimeters;
 	public JSlider SLI_infill;
 	
+	public JRadioButton RD_x;
+	public JRadioButton RD_y;
+	public JRadioButton RD_z;
+	public ButtonGroup RD_axis_group;
+	
 	public JRadioButton RD_grid;
 	public JRadioButton RD_honeycomb;
 	public JRadioButton RD_gyroid;
@@ -36,6 +50,9 @@ public class GUI_Manager implements ActionListener{
 	
 	public JSlider SLI_temperature;
 	
+	JButton BT_conv;
+	
+	JLabel LB_log;
 	
 	// STL list
 	public DefaultListModel<String> ListModel;
@@ -147,16 +164,16 @@ public class GUI_Manager implements ActionListener{
 		BT_minus45.addActionListener(this);
 		
 		// radio button
-		JRadioButton RD_x = new JRadioButton("x");
-		JRadioButton RD_y = new JRadioButton("y");
-		JRadioButton RD_z = new JRadioButton("z");
-		ButtonGroup RD_group = new ButtonGroup();
+		RD_x = new JRadioButton("x");
+		RD_y = new JRadioButton("y");
+		RD_z = new JRadioButton("z");
+		RD_axis_group = new ButtonGroup();
 		RD_x.setFocusable(false);
 		RD_y.setFocusable(false);
 		RD_z.setFocusable(false);
-		RD_group.add(RD_x);
-		RD_group.add(RD_y);
-		RD_group.add(RD_z);
+		RD_axis_group.add(RD_x);
+		RD_axis_group.add(RD_y);
+		RD_axis_group.add(RD_z);
 		RD_x.setSelected(true);
 		
 		
@@ -325,12 +342,17 @@ public class GUI_Manager implements ActionListener{
 		
 		
 		// convert button
-		JButton BT_conv = new JButton("convert");
+		BT_conv = new JButton("convert");
 		BT_conv.setFocusable(false);
 		paramWindow.getContentPane().add(BT_conv);
 		BT_conv.setBounds(125, 375, 150, 20);
 		BT_conv.setActionCommand("convert");
 		BT_conv.addActionListener(this);
+		
+		// process log label
+		LB_log = new JLabel("");
+		paramWindow.getContentPane().add(LB_log);
+		LB_log.setBounds(300, 375, 150, 20);
 		
 		//****************************************************************
 		// set Key Event Listener ****************************************
@@ -346,11 +368,16 @@ public class GUI_Manager implements ActionListener{
 			public void keyPressed(KeyEvent e) {
 				// TODO Auto-generated method stub
 				int code = e.getKeyCode();
-				//System.out.println("GUI key:"+e.getKeyCode());
+				int mods = e.getModifiersEx();
+				if(mods == 64) { mods = 100; }
+				else { mods = 0; }
+				System.out.println("GUI key:"+code+"/"+mods );
 				// 37 - left
 				// 38 - up
 				// 39 - right
 				// 40 - down
+				// with shift, +100
+				ParamHolder.arrowKeyPressed(code - 37 + mods);
 				
 			}
 
@@ -384,37 +411,150 @@ public class GUI_Manager implements ActionListener{
 		}
 		else if(actionCommand.equals("rotate_plus"))
 		{
-			System.out.println("rotate plus");
+			int SEL_ID = ParamHolder.SELECTED_STL_ID;
+			
+			if(SEL_ID != -1 )
+			{
+				STL_Class tempSTL = ParamHolder.stl_Array.get(SEL_ID);
+				
+				// selected axis
+				if(RD_x.isSelected())
+				{
+					tempSTL.rotateXYZ(45.0f, 0.0f, 0.0f);
+				}
+				else if(RD_y.isSelected())
+				{
+					tempSTL.rotateXYZ(0.0f, 45.0f, 0.0f);
+				}
+				else if(RD_z.isSelected())
+				{
+					tempSTL.rotateXYZ(0.0f, 0.0f, 45.0f);
+				}
+			}
 		}
 		else if(actionCommand.equals("rotate_minus"))
 		{
-			System.out.println("rotate minus");
+			int SEL_ID = ParamHolder.SELECTED_STL_ID;
+			
+			if( SEL_ID != -1)
+			{
+				STL_Class tempSTL = ParamHolder.stl_Array.get(SEL_ID);
+				
+				// selected axis
+				if(RD_x.isSelected())
+				{
+					tempSTL.rotateXYZ(-45.0f, 0.0f, 0.0f);
+				}
+				else if(RD_y.isSelected())
+				{
+					tempSTL.rotateXYZ(0.0f, -45.0f, 0.0f);
+				}
+				else if(RD_z.isSelected())
+				{
+					tempSTL.rotateXYZ(0.0f, 0.0f, -45.0f);
+				}
+			}
 		}
 		
 		else if(actionCommand.equals("radio_x"))
 		{
-			System.out.println("radio x");
+			//System.out.println("radio x");
 		}
 		else if(actionCommand.equals("radio_y"))
 		{
-			System.out.println("radio y");
+			//System.out.println("radio y");
 		}
 		else if(actionCommand.equals("radio_z"))
 		{
-			System.out.println("radio z");
+			//System.out.println("radio z");
 		}
 		else if(actionCommand.equals("convert"))
 		{
-			System.out.println("convert button");
-			
-		}
+			int numSTL = ParamHolder.stl_Array.size();
+
+			if( numSTL >= 1)
+			{
+				
+				// open save dialog
+				String desktop_path = System.getProperty("user.home") + File.separator + "Desktop";
+				JFileChooser saveDialog = new JFileChooser(desktop_path);
+				int ret = saveDialog.showSaveDialog(paramWindow);
+
+				
+				if(ret == JFileChooser.APPROVE_OPTION)
+				{
+					String savePath = saveDialog.getSelectedFile().getAbsolutePath();
+					ParamHolder.save_gcode_path = savePath;
+				}
+				else if(ret == JFileChooser.CANCEL_OPTION)
+				{
+					return; // finish this process
+				}
+				
+				
+				// get slice parameter fron GUI
+				ParamHolder.LAYER_HEIGHT = (SLI_layer_height.getValue() * 0.05 + 0.2);
+				System.out.println("Layer height : " + ParamHolder.LAYER_HEIGHT);
+				
+				ParamHolder.PERIMETERS = SLI_perimeters.getValue() + 1;
+				System.out.println("Perimeters : " + ParamHolder.PERIMETERS);
+				
+				ParamHolder.INFILL = SLI_infill.getValue() * 5 ;
+				System.out.println("Infill : " + ParamHolder.INFILL);
+				
+				int pattern = -1;
+				if( RD_grid.isSelected() ) { pattern = 0; }
+				else if(RD_honeycomb.isSelected() ) { pattern = 1; }
+				else if(RD_gyroid.isSelected() ) { pattern = 2; }
+				ParamHolder.INFILL_PATTERN = pattern;
+				System.out.println("Infill pattern : " + ParamHolder.INFILL_PATTERN );
+				
+				ParamHolder.IS_SUPPORT = CHK_support.isSelected();
+				System.out.println("support : " + ParamHolder.IS_SUPPORT);
+				
+				ParamHolder.IS_RAFT = CHK_raft.isSelected();
+				System.out.println("raft : " + ParamHolder.IS_RAFT);
+				
+				ParamHolder.TEMPERATURE = SLI_temperature.getValue()*5 + 190;
+				System.out.println("temperature : " + ParamHolder.TEMPERATURE);
+				
+				// disable convert button
+				BT_conv.setEnabled(false);
+				
+				// stop rendering
+				ParamHolder.isRender = false;
+				
+				//****************************************************
+				//****************************************************
+				
+				
+				// re-layout & merge STL file
+				try {
+					this.merge_stl_files();
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				
+				// slice *****************************************
+				this.run_slicer_repair();
+				
+				// create ini file *******************************
+				ParamHolder.create_ini_file();
+				
+				
+			} // if stl exist	
+		} // if convert button hit
+		
+		
 	}// action performed
 	
 	
 	void load_STL_file()
 	{
 		// open file chooser
-		JFileChooser fc = new JFileChooser();
+		String desktop_path = System.getProperty("user.home") + File.separator + "Desktop";
+		JFileChooser fc = new JFileChooser(desktop_path);
 		FileNameExtensionFilter filt = new FileNameExtensionFilter("STL file", "stl");
 		fc.setFileFilter(filt);
 		
@@ -464,4 +604,160 @@ public class GUI_Manager implements ActionListener{
 		}
 	}
 	
+	
+	//*************************************************
+	
+	private void merge_stl_files() throws IOException
+	{
+		//*****************************************
+		LB_log.setText("merge stl files.");
+		LB_log.revalidate();
+		LB_log.repaint();
+		//*****************************************
+		
+		int numSTL = ParamHolder.stl_Array.size();
+		
+		// get total num triangles
+		int numT = 0;
+		
+		for( int i = 0 ; i < numSTL ; i++ )
+		{
+			numT += ParamHolder.stl_Array.get(i).num_of_triangles;
+		}
+		
+		System.out.println("num total triangles : " + numT);
+		
+		////////////////////////////////////////////////////
+		// get current directory
+		String curDir = System.getProperty("user.dir");
+		System.out.println(curDir);
+		
+		Path curPath = Paths.get("");
+		String absolutePath = curPath.toAbsolutePath().toString();
+		System.out.println(absolutePath);
+		
+		// create merged STL path
+		String merge_STL_path = new String(curDir + "/merged.stl");
+		System.out.println(merge_STL_path);
+
+		
+		//*********************************************************
+		// merge STLs *********************************************
+		//*********************************************************
+		
+		try {
+			
+			// must write data in LittleEndian format ( java use BigEndian )
+			FileOutputStream fos = new FileOutputStream(merge_STL_path);
+			DataOutputStream dos = new DataOutputStream(fos);
+			ByteBuffer wb = ByteBuffer.allocate(4);
+			ByteBuffer wVert = ByteBuffer.allocate(4*9); // 3vertex(xyz)
+			ByteBuffer wNorm = ByteBuffer.allocate(4*3);
+			wb.order(ByteOrder.LITTLE_ENDIAN);
+			wVert.order(ByteOrder.LITTLE_ENDIAN);
+			wNorm.order(ByteOrder.LITTLE_ENDIAN);
+			
+			// write header [80]bytes
+			byte tempChar = 65;
+			for( int i = 0 ; i < 80 ; i++ )
+			{
+				dos.write((int)tempChar); // write 1 byte in INT, upper 3bytes are ignored.
+			}
+			
+			// write num triangles [4]bytes
+			wb.putInt(numT);
+			wb.flip();
+			dos.write(wb.array());
+			
+			// write stl triangle data
+			for( int s = 0 ; s < numSTL ; s++ )
+			{
+				// vertex must be shift
+				STL_Class targetSTL = ParamHolder.stl_Array.get(s);
+				//000001CA
+
+				//1010 0100 \ 0001 0000
+				// 0001 0000 1010 1100
+				// this num triangles
+				int nt = targetSTL.num_of_triangles;
+				float[] tempV = targetSTL.vert;
+				float[] tempN = targetSTL.norm;
+				float tX = targetSTL.shift_x;
+				float tY = targetSTL.shift_y;
+				float tZ = targetSTL.bound_min_z;
+
+				for( int n = 0 ; n < nt ; n++ )
+				{
+					int ID = n*9;
+					wNorm.putFloat(tempN[ID]);
+					wNorm.putFloat(tempN[ID+1]);
+					wNorm.putFloat(tempN[ID+2]);
+					wNorm.flip();
+					dos.write(wNorm.array()); // norm z
+					
+					wVert.putFloat(tempV[ID] + tX); // x1
+					wVert.putFloat(tempV[ID+1] + tY); // y1
+					wVert.putFloat(tempV[ID+2] - tZ); // z1
+					wVert.putFloat(tempV[ID+3] + tX); // x2
+					wVert.putFloat(tempV[ID+4] + tY); // y2
+					wVert.putFloat(tempV[ID+5] - tZ); // z2
+					wVert.putFloat(tempV[ID+6] + tX); // x3
+					wVert.putFloat(tempV[ID+7] + tY); // y3
+					wVert.putFloat(tempV[ID+8] - tZ); // z3
+					wVert.flip();
+					dos.write(wVert.array());
+					
+					// skip 2 byte
+					dos.writeByte((int)0);
+					dos.writeByte((int)0);
+				} // for n
+				
+			}// for numSTL
+			
+			// close stream
+			dos.close();
+			fos.close();
+			
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+	} // merge stl files()
+	
+	//**********************************************************
+	//**********************************************************
+	
+	void run_slicer_repair()
+	{
+		//
+		LB_log.setText("repair STL");
+		
+		// get current directory
+		String curDir = System.getProperty("user.dir");
+		String slicer_path = new String(curDir + "/Slic3r/Slic3r-console.exe");
+		String repair_arg = new String("--repair");
+		String mergeSTL_path = new String(curDir + "/merged.stl");
+		
+		ProcessBuilder slicer_process = new ProcessBuilder(slicer_path, repair_arg, mergeSTL_path);
+		
+		try {
+			Process process = slicer_process.start();
+			try {
+				// wait for repair process
+				int exitCode = process.waitFor();
+				System.out.println("exit code : " + exitCode );
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+	
+	} // run slicer repair
+	
+
 }
