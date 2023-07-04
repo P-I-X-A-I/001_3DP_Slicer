@@ -178,7 +178,10 @@ public class ParamHolder {
 		ini_string.append("infill_extruder = 1\n");
 		ini_string.append("solid_infill_extruder = 1\n");
 		ini_string.append("support_material_extruder = 1\n");
-		
+		ini_string.append("support_material_interface_extruder = 1\n");
+		ini_string.append("ooze_prevention = 0\n");
+		ini_string.append("standby_temperature_delta = -5\n");
+		ini_string.append("interface_shells = 0\n");
 		
 		// printer id
 		switch(PRINTER_ID)
