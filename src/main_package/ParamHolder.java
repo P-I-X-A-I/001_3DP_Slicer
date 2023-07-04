@@ -161,6 +161,24 @@ public class ParamHolder {
 		ini_string.append("support_material_spacing = 1.25\n");
 		ini_string.append("support_material_angle = 135\n");
 		ini_string.append(String.format("support_material_interface_layers = %d\n", num_interface));
+		ini_string.append("support_material_interface_spacing = 0.8\n");
+		ini_string.append("dont_support_bridges = 1\n");
+		ini_string.append("support_material_buildplate_only = 0\n");
+		ini_string.append("support_material_interface_extrusion_width = 0\n");
+		
+		ini_string.append("perimeter_acceleration = 0\n");
+		ini_string.append("infill_acceleration = 0\n");
+		ini_string.append("bridge_acceleration = 0\n");
+		ini_string.append("first_layer_acceleration = 0\n");
+		ini_string.append("default_acceleration = 0\n");
+		ini_string.append("max_print_speed = 80\n");
+		ini_string.append("max_volumetric_speed = 0\n");
+		
+		ini_string.append("perimeter_extruder = 1\n");
+		ini_string.append("infill_extruder = 1\n");
+		ini_string.append("solid_infill_extruder = 1\n");
+		ini_string.append("support_material_extruder = 1\n");
+		
 		
 		// printer id
 		switch(PRINTER_ID)
