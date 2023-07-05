@@ -183,6 +183,26 @@ public class ParamHolder {
 		ini_string.append("standby_temperature_delta = -5\n");
 		ini_string.append("interface_shells = 0\n");
 		
+		//ini_string.append("extrusion_width = 0\n");
+		//ini_string.append("perimeter_extrusion_width = 0\n");
+		//ini_string.append("external_perimeter_extrusion_width = 0\n");
+		//ini_string.append("infill_extrusion_width = ");
+		//ini_string.append("top_infill_extrusion_width = ");
+		//ini_string.append("support_material_extrusion_width =");
+		//ini_string.append("infill_overlap = ");
+		ini_string.append("bridge_flow_ratio = 1\n");
+		ini_string.append("xy_size_compensation = 0\n");
+		ini_string.append("threads = 8\n");
+		ini_string.append("resolution = 0\n");
+		
+		ini_string.append("complete_objects = 0\n");
+		ini_string.append("extruder_clearance_height = 20\n");
+		ini_string.append("extruder_clearance_radius = 20\n");
+		ini_string.append("output_filename_format = [input_filename_base].gco\n");
+		ini_string.append("post_process =\n");
+		ini_string.append("notes =\n");
+		ini_string.append("gcode_comments = 0\n");
+		
 		// printer id
 		switch(PRINTER_ID)
 		{
@@ -209,7 +229,11 @@ public class ParamHolder {
 		//***************************************************************
 		//****** filament setting ***************************************
 		//***************************************************************
-
+			
+			ini_string.append("# filament setting\n");
+			ini_string.append("filament_colour = #FFFFFF\n");
+			ini_string.append("filament_diameter = 1.75\n");
+			ini_string.append("extrusion_multiplier = 1.0\n");
 		
 		//***************************************************************
 		//****** machine setting ***************************************
