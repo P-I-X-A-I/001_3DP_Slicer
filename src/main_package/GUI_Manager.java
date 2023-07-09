@@ -542,8 +542,17 @@ public class GUI_Manager implements ActionListener{
 				// create ini file *******************************
 				ParamHolder.create_ini_file();
 				
+				// run slice *************************************
+				ParamHolder.create_arg_and_run_slice();
 				
-			} // if stl exist	
+				// restore render
+				ParamHolder.isRender = true;
+				
+				// restore convert button
+				BT_conv.setEnabled(true);
+				LB_log.setText("");
+				
+			} // if stl >= 1	
 		} // if convert button hit
 		
 		
@@ -630,16 +639,13 @@ public class GUI_Manager implements ActionListener{
 		////////////////////////////////////////////////////
 		// get current directory
 		String curDir = System.getProperty("user.dir");
-		System.out.println(curDir);
 		
-		Path curPath = Paths.get("");
-		String absolutePath = curPath.toAbsolutePath().toString();
-		System.out.println(absolutePath);
+		//Path curPath = Paths.get("");
+		//String absolutePath = curPath.toAbsolutePath().toString();
 		
 		// create merged STL path
 		String merge_STL_path = new String(curDir + "/merged.stl");
-		System.out.println(merge_STL_path);
-
+		ParamHolder.merged_STL_path = merge_STL_path;
 		
 		//*********************************************************
 		// merge STLs *********************************************
@@ -746,7 +752,7 @@ public class GUI_Manager implements ActionListener{
 			try {
 				// wait for repair process
 				int exitCode = process.waitFor();
-				System.out.println("exit code : " + exitCode );
+				System.out.println("repair process exit code : " + exitCode );
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
