@@ -10,8 +10,12 @@ public class EntryClass {
 
 		System.out.println("Entry Class main Func");
 		
+		// Paramholder load setting file
+		ParamHolder.load_setting_file();
+		
 		// parameter window setup
 		GUI_obj = new GUI_Manager();
+
 		
 		// GL setup ( GL loop run on another thread )
 		gl_obj = new GL_Manager();

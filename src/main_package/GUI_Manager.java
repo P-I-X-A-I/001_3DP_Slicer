@@ -26,7 +26,6 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 
 import java.io.File;
 
-
 public class GUI_Manager implements ActionListener{
 
 	JFrame paramWindow;
@@ -35,6 +34,9 @@ public class GUI_Manager implements ActionListener{
 	public JSlider SLI_layer_height;
 	public JSlider SLI_perimeters;
 	public JSlider SLI_infill;
+	public JSlider SLI_loops;
+	public JSlider SLI_adaptiveSlice;
+
 	
 	public JRadioButton RD_x;
 	public JRadioButton RD_y;
@@ -47,6 +49,11 @@ public class GUI_Manager implements ActionListener{
 	
 	public JCheckBox CHK_raft;
 	public JCheckBox CHK_support;
+	public JCheckBox CHK_advanced;
+	public JCheckBox CHK_howManyLoops;
+	public JCheckBox CHK_adaptiveSlice;
+	public JCheckBox CHK_fastFirstLayer;
+	public JCheckBox CHK_baseplate;
 	
 	public JSlider SLI_temperature;
 	
@@ -67,7 +74,7 @@ public class GUI_Manager implements ActionListener{
 		System.out.println("GUI Manager init");
 		
 		paramWindow = new JFrame("parameters");
-		paramWindow.setBounds(100, 100, 420, 450);
+		paramWindow.setBounds(100, 100, 420, 600);
 		paramWindow.setResizable(false);
 		paramWindow.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		paramWindow.setLayout(null);
@@ -79,7 +86,14 @@ public class GUI_Manager implements ActionListener{
 		LB_selectPrinter.setBounds(10, 10, 150, 20);
 		
 		// printer combobox
-		String[] printers = {"printer-1", "printer-2", "printer-3"};
+		int PNUM = ParamHolder.PRNT_NUM;
+		
+		String[] printers = new String[PNUM];
+		for( int i = 0 ; i < PNUM ; i++ )
+		{
+			printers[i] = ParamHolder.PRNT_NAME[i];
+		}
+		
 		JComboBox<String> combo_obj = new JComboBox<>(printers);
 		combo_obj.setFocusable(false);
 		paramWindow.getContentPane().add(combo_obj);
@@ -134,8 +148,11 @@ public class GUI_Manager implements ActionListener{
 			{
 				if( e.getValueIsAdjusting() == false) // mouse released
 				{
+					// count list elements
+					int itemCount = ListView_STL.getModel().getSize();
+					
 					int sel = ListView_STL.getSelectedIndex();
-					System.out.println("Selected STL "+sel);
+					System.out.println(itemCount + "Selected STL "+sel);
 					
 					ParamHolder.SELECTED_STL_ID = sel;
 				}
@@ -205,7 +222,7 @@ public class GUI_Manager implements ActionListener{
 		LB_layer_height.setBounds(220, 10, 200, 20);
 		
 		// layer height
-		SLI_layer_height = new JSlider(0, 5, 2);
+		SLI_layer_height = new JSlider(0, 11, 5);
 		SLI_layer_height.setFocusable(false);
 		SLI_layer_height.setPaintTicks(true);
 		SLI_layer_height.setSnapToTicks(true);
@@ -213,13 +230,17 @@ public class GUI_Manager implements ActionListener{
 		SLI_layer_height.setMinorTickSpacing(1);
 		paramWindow.getContentPane().add(SLI_layer_height);
 		SLI_layer_height.setBounds(210, 40, 180, 20);
+		
 		SLI_layer_height.addChangeListener(new ChangeListener() {
 			@Override
 			public void stateChanged(ChangeEvent e) {
 				// TODO Auto-generated method stub
 				int SLI = SLI_layer_height.getValue();
-				String mmStr = String.format("Layer height : %1.2fmm", 0.2 + SLI*0.05);
+				String mmStr = String.format("Layer height : %1.2fmm", 0.15 + SLI*0.03);
 				LB_layer_height.setText(mmStr);
+				
+				// set paramholder
+				ParamHolder.LAYER_HEIGHT = (0.15 + SLI*0.03);
 			}
 		});
 		
@@ -245,17 +266,20 @@ public class GUI_Manager implements ActionListener{
 				int SLI = SLI_perimeters.getValue();
 				String periStr = String.format("Perimeters : %d", SLI+1);
 				LB_perimeter.setText(periStr);
+				
+				// set paramholder
+				ParamHolder.PERIMETERS = (SLI+1);
 			}
 			
 		});
 		
 		
 		// fill density
-		JLabel LB_fill = new JLabel("Infill : 15%");
+		JLabel LB_fill = new JLabel("Infill : 10%");
 		paramWindow.getContentPane().add(LB_fill);
 		LB_fill.setBounds(220, 130, 200, 20);
 		
-		SLI_infill = new JSlider(0, 10, 3);
+		SLI_infill = new JSlider(0, 20, 5);
 		SLI_infill.setFocusable(false);
 		SLI_infill.setPaintTicks(true);
 		SLI_infill.setSnapToTicks(true);
@@ -269,8 +293,11 @@ public class GUI_Manager implements ActionListener{
 			public void stateChanged(ChangeEvent e) {
 				// TODO Auto-generated method stub
 				int SLI = SLI_infill.getValue();
-				String infillStr = String.format("Infill : %d%%", SLI*5);
+				String infillStr = String.format("Infill : %d%%", SLI*2);
 				LB_fill.setText(infillStr);
+				
+				// set param holder
+				ParamHolder.INFILL = (SLI*2);
 			}
 			
 		});
@@ -349,6 +376,120 @@ public class GUI_Manager implements ActionListener{
 		BT_conv.setActionCommand("convert");
 		BT_conv.addActionListener(this);
 		
+		//******************************************************
+		// advanced settings ***********************************
+		//******************************************************
+		
+		CHK_howManyLoops = new JCheckBox("print loops(if possible) :");;
+		CHK_howManyLoops.setFocusable(false);
+		CHK_howManyLoops.setSelected(false);
+		paramWindow.getContentPane().add(CHK_howManyLoops);
+		CHK_howManyLoops.setBounds(10, 450, 200, 20);
+		CHK_howManyLoops.setEnabled(false);
+		
+		SLI_loops = new JSlider(2, 9, 2);
+		SLI_loops.setFocusable(false);
+		SLI_loops.setPaintTicks(true);
+		SLI_loops.setSnapToTicks(true);
+		SLI_loops.setMajorTickSpacing(1);
+		SLI_loops.setMinorTickSpacing(1);
+		paramWindow.getContentPane().add(SLI_loops);
+		SLI_loops.setBounds(10, 480, 180, 20);
+		SLI_loops.setEnabled(false);
+		SLI_loops.addChangeListener(new ChangeListener() {
+
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				// TODO Auto-generated method stub
+				int LOP = SLI_loops.getValue();
+				String tempStr = String.format("print loops(if possible) : %d", LOP);
+				CHK_howManyLoops.setText(tempStr);
+				
+				ParamHolder.NUM_LOOP = LOP;
+			}
+			
+		});
+		
+		CHK_fastFirstLayer = new JCheckBox("Fast First Layer(raft ignored)");
+		CHK_fastFirstLayer.setFocusable(false);
+		CHK_fastFirstLayer.setSelected(false);
+		paramWindow.getContentPane().add(CHK_fastFirstLayer);
+		CHK_fastFirstLayer.setBounds(10, 510, 200, 20);
+		CHK_fastFirstLayer.setEnabled(false);
+		
+		CHK_adaptiveSlice = new JCheckBox("Adaptive slice : ");
+		CHK_adaptiveSlice.setFocusable(false);
+		CHK_adaptiveSlice.setSelected(false);
+		paramWindow.getContentPane().add(CHK_adaptiveSlice);
+		CHK_adaptiveSlice.setBounds(210, 450, 200, 20);
+		CHK_adaptiveSlice.setEnabled(false);
+		
+		SLI_adaptiveSlice = new JSlider(1, 10, 5);
+		SLI_adaptiveSlice.setFocusable(false);
+		SLI_adaptiveSlice.setPaintTicks(true);
+		SLI_adaptiveSlice.setSnapToTicks(true);
+		SLI_adaptiveSlice.setMajorTickSpacing(1);
+		SLI_adaptiveSlice.setMinorTickSpacing(1);
+		paramWindow.getContentPane().add(SLI_adaptiveSlice);
+		SLI_adaptiveSlice.setBounds(210, 480, 180, 20);
+		SLI_adaptiveSlice.setEnabled(false);
+		SLI_adaptiveSlice.addChangeListener(new ChangeListener() {
+
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				// TODO Auto-generated method stub
+				int QOL = SLI_adaptiveSlice.getValue();
+				String tempStr = String.format("Adaptive slice : %d%%", QOL*10);
+				CHK_adaptiveSlice.setText(tempStr);
+				
+				ParamHolder.ADAPTIVE_QUALITY = QOL*10;
+			}
+			
+		});
+		
+		CHK_baseplate = new JCheckBox("Add base plate(not yet)");
+		CHK_baseplate.setFocusable(false);
+		CHK_baseplate.setSelected(false);
+		paramWindow.getContentPane().add(CHK_baseplate);
+		CHK_baseplate.setBounds(210, 510, 200, 20);
+		CHK_baseplate.setEnabled(false);
+		
+				
+		CHK_advanced = new JCheckBox("advanced settings");
+		CHK_advanced.setFocusable(false);
+		CHK_advanced.setSelected(false);
+		paramWindow.getContentPane().add(CHK_advanced);
+		CHK_advanced.setBounds(10, 420, 150, 20);
+		CHK_advanced.addItemListener(e->{
+			
+			if(e.getStateChange() == 1)// checked
+			{
+				CHK_howManyLoops.setEnabled(true);
+				CHK_fastFirstLayer.setEnabled(true);
+				CHK_adaptiveSlice.setEnabled(true);
+				CHK_baseplate.setEnabled(true);
+				SLI_loops.setEnabled(true);
+				SLI_adaptiveSlice.setEnabled(true);
+			}
+			else
+			{
+				CHK_howManyLoops.setEnabled(false);
+				CHK_fastFirstLayer.setEnabled(false);
+				CHK_adaptiveSlice.setEnabled(false);
+				CHK_baseplate.setEnabled(false);
+				SLI_loops.setEnabled(false);
+				SLI_adaptiveSlice.setEnabled(false);
+				
+				// turn of checkboxes;
+				CHK_howManyLoops.setSelected(false);
+				CHK_fastFirstLayer.setSelected(false);
+				CHK_adaptiveSlice.setSelected(false);
+				CHK_baseplate.setSelected(false);
+			}
+		});
+		
+
+		
 		// process log label
 		LB_log = new JLabel("");
 		paramWindow.getContentPane().add(LB_log);
@@ -404,10 +545,21 @@ public class GUI_Manager implements ActionListener{
 		if( actionCommand.equals("BT_LOAD")) 
 		{
 			this.load_STL_file();
+			// autoselect listview
+			// select last STL object
+			int itemCount = ListView_STL.getModel().getSize();
+			ListView_STL.setSelectedIndex(itemCount - 1);
 		}
 		else if(actionCommand.equals("BT_DELETE"))
 		{
 			this.delete_STL_file();
+			// autoselect listview
+			// select last STL object if exist
+			int itemCount = ListView_STL.getModel().getSize();
+			if(itemCount != 0)
+			{
+				ListView_STL.setSelectedIndex(itemCount -1);
+			}
 		}
 		else if(actionCommand.equals("rotate_plus"))
 		{
@@ -484,7 +636,20 @@ public class GUI_Manager implements ActionListener{
 				if(ret == JFileChooser.APPROVE_OPTION)
 				{
 					String savePath = saveDialog.getSelectedFile().getAbsolutePath();
-					ParamHolder.save_gcode_path = savePath;
+					String finalPath;
+					
+					// check .gco extension
+					boolean isExt = savePath.endsWith(".gco");
+					if(isExt == false)
+					{
+						finalPath = savePath + ".gco";
+					}
+					else
+					{
+						finalPath = savePath;
+					}
+					
+					ParamHolder.save_gcode_path = finalPath;
 				}
 				else if(ret == JFileChooser.CANCEL_OPTION)
 				{
@@ -493,15 +658,9 @@ public class GUI_Manager implements ActionListener{
 				
 				
 				// get slice parameter fron GUI
-				ParamHolder.LAYER_HEIGHT = (SLI_layer_height.getValue() * 0.05 + 0.2);
-				System.out.println("Layer height : " + ParamHolder.LAYER_HEIGHT);
+				// SLIDER value are set when slider changed.
 				
-				ParamHolder.PERIMETERS = SLI_perimeters.getValue() + 1;
-				System.out.println("Perimeters : " + ParamHolder.PERIMETERS);
-				
-				ParamHolder.INFILL = SLI_infill.getValue() * 5 ;
-				System.out.println("Infill : " + ParamHolder.INFILL);
-				
+				// fill pattern
 				int pattern = -1;
 				if( RD_grid.isSelected() ) { pattern = 0; }
 				else if(RD_honeycomb.isSelected() ) { pattern = 1; }
@@ -509,6 +668,8 @@ public class GUI_Manager implements ActionListener{
 				ParamHolder.INFILL_PATTERN = pattern;
 				System.out.println("Infill pattern : " + ParamHolder.INFILL_PATTERN );
 				
+				
+				// checkbox
 				ParamHolder.IS_SUPPORT = CHK_support.isSelected();
 				System.out.println("support : " + ParamHolder.IS_SUPPORT);
 				
@@ -517,6 +678,22 @@ public class GUI_Manager implements ActionListener{
 				
 				ParamHolder.TEMPERATURE = SLI_temperature.getValue()*5 + 190;
 				System.out.println("temperature : " + ParamHolder.TEMPERATURE);
+				
+				ParamHolder.IS_ADVANCED = CHK_advanced.isSelected();
+				System.out.println("advanced settings : " + ParamHolder.IS_ADVANCED);
+				
+				ParamHolder.IS_LOOP = CHK_howManyLoops.isSelected();
+				System.out.println("loop printing : " + ParamHolder.IS_LOOP);
+				
+				ParamHolder.IS_ADAPTIVE_SLICE = CHK_adaptiveSlice.isSelected();
+				System.out.println("adaptive slicing : " + ParamHolder.IS_ADAPTIVE_SLICE);
+				
+				ParamHolder.IS_FFL = CHK_fastFirstLayer.isSelected();
+				System.out.println("fast first layer : " + ParamHolder.IS_FFL);
+				
+				ParamHolder.IS_BASE_PLATE = CHK_baseplate.isSelected();
+				System.out.println("automatic baseplate : " + ParamHolder.IS_BASE_PLATE);
+				
 				
 				// disable convert button
 				BT_conv.setEnabled(false);
@@ -542,7 +719,7 @@ public class GUI_Manager implements ActionListener{
 				// create ini file *******************************
 				ParamHolder.create_ini_file();
 				
-				// run slice *************************************
+				// run slice & wait for finish*********************
 				ParamHolder.create_arg_and_run_slice();
 				
 				// restore render

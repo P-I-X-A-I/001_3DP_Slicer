@@ -42,14 +42,16 @@ public class GL_Manager implements Runnable{
 	int VBO_STL_NORM;
 	
 	// bed grid
-	int num_grid_line;
-	float[] bed_A;
-	float[] bed_B;
-	float[] bed_C;
-	float[] draw_bed_v;
-	float bed_x = 0.0f;
-	float bed_y = 0.0f;
-	float bed_z = 0.0f;
+	//int num_grid_line;
+	//float[] bed_A;
+	//float[] bed_B;
+	//float[] bed_C;
+	//float[] draw_bed_v;
+	float[] bed_v = new float[5000];// enough large array
+	int num_bed_line;
+	float bed_x_lim = 0.0f;
+	float bed_y_lim = 0.0f;
+	float bed_z_lim = 0.0f;
 	
 	// view point
 	float[] eyeVec = new float[3];
@@ -69,6 +71,7 @@ public class GL_Manager implements Runnable{
 	public GL_Manager() // constructor
 	{
 		System.out.println("GL Manager init");
+		/*
 		// setup bed lines;
 		int iterX = ParamHolder.A_X / 10;
 		int iterY = ParamHolder.A_Y / 10;
@@ -199,7 +202,7 @@ public class GL_Manager implements Runnable{
 		bed_C[ID] = -endX;	ID++;
 		bed_C[ID] = -endY;	ID++;
 		bed_C[ID] = (float)ParamHolder.C_Z;	ID++;
-		
+		*/
 	}
 	
 	
@@ -217,6 +220,7 @@ public class GL_Manager implements Runnable{
 			//**************************************************
 			//**************************************************
 			
+			// set viewpoint & bed v pointer
 			this.CHECK_PRINTER();
 
 			if( diff > 33 && ParamHolder.isRender )
@@ -273,40 +277,100 @@ public class GL_Manager implements Runnable{
 	{
 		// get printer ID
 		int PRINTER_ID = ParamHolder.PRINTER_ID;
-		//float[] bedV;
+		
+		// get bed size
+		int BED_X = ParamHolder.PRNT_X[PRINTER_ID];
+		int BED_Y = ParamHolder.PRNT_Y[PRINTER_ID];
+		int BED_Z = ParamHolder.PRNT_Z[PRINTER_ID];
+		
+		int NUM_X_LINE = (BED_X/10) + 1;
+		int NUM_Y_LINE = (BED_Y/10) + 1;
+		num_bed_line = NUM_X_LINE + NUM_Y_LINE + 1;
+		
+		// set grid vertex *******************************
+		// x direction
+		int ID = 0;
+		float sX = (float)(BED_X/2);
+		float sY = (float)(BED_Y/2);
+		// x line
+		for( int lx = 0 ; lx < NUM_X_LINE; lx++ )
+		{
+			bed_v[ID] = sX - (10.0f*lx); 	ID++; // x0
+			bed_v[ID] = sY;					ID++; // y0
+			bed_v[ID] = 0.0f;				ID++; // z0
+			
+			bed_v[ID] = sX - (10.0f*lx);	ID++; // x1
+			bed_v[ID] = -sY;				ID++; // y1
+			bed_v[ID] = 0.0f;				ID++; // z1
+		}
+		// y line
+		for(int ly = 0 ; ly < NUM_Y_LINE ; ly++ )
+		{
+			bed_v[ID] = sX;					ID++; // x0
+			bed_v[ID] = sY - (10.0f*ly);	ID++; // y0
+			bed_v[ID] = 0.0f;				ID++; // z0
+			
+			bed_v[ID] = -sX;				ID++;
+			bed_v[ID] = sY - (10.0f*ly);	ID++;
+			bed_v[ID] = 0.0f;				ID++;
+		}
+		// origin line
+		bed_v[ID] = -sX;	ID++;
+		bed_v[ID] = -sY;	ID++;
+		bed_v[ID] = 0.0f;	ID++;
+		
+		bed_v[ID] = -sX;	ID++;
+		bed_v[ID] = -sY;	ID++;
+		bed_v[ID] = (float)BED_Z; ID++;
+		//*************************************************
+		
+		// setup eye target vec ***************************
+		targetVec[0] = 0.0f;
+		targetVec[1] = 0.0f;
+		targetVec[2] = (float)(BED_Z/4);
+		//*************************************************
+		
+		// set bed limitation *****************************
+		bed_x_lim = BED_X / 2.0f;
+		bed_y_lim = BED_Y / 2.0f;
+		bed_z_lim = (float)BED_Z;
+		//*************************************************
+		
+		/*
 		switch(PRINTER_ID)
 		{
 		case 0:
 			targetVec[0] = 0.0f;
 			targetVec[1] = 0.0f;
 			targetVec[2] = (float)(ParamHolder.A_Z/4);
-			draw_bed_v = bed_A;
-			bed_x = ParamHolder.A_X / 2.0f;
-			bed_y = ParamHolder.A_Y / 2.0f;
-			bed_z = (float)ParamHolder.A_Z;
+			//draw_bed_v = bed_A;
+			//bed_x = ParamHolder.A_X / 2.0f;
+			//bed_y = ParamHolder.A_Y / 2.0f;
+			//bed_z = (float)ParamHolder.A_Z;
 			break;
 		case 1:
 			targetVec[0] = 0.0f;
 			targetVec[1] = 0.0f;
 			targetVec[2] = (float)(ParamHolder.B_Z/4);
-			draw_bed_v = bed_B;
-			bed_x = ParamHolder.B_X / 2.0f;
-			bed_y = ParamHolder.B_Y / 2.0f;
-			bed_z = (float)ParamHolder.B_Z;
+			//draw_bed_v = bed_B;
+			//bed_x = ParamHolder.B_X / 2.0f;
+			//bed_y = ParamHolder.B_Y / 2.0f;
+			//bed_z = (float)ParamHolder.B_Z;
 			break;
 		case 2:
 			targetVec[0] = 0.0f;
 			targetVec[1] = 0.0f;
 			targetVec[2] = (float)(ParamHolder.C_Z/4);
-			draw_bed_v = bed_C;
-			bed_x = ParamHolder.C_X / 2.0f;
-			bed_y = ParamHolder.C_Y / 2.0f;
-			bed_z = (float)ParamHolder.C_Z;
+			//draw_bed_v = bed_C;
+			//bed_x = ParamHolder.C_X / 2.0f;
+			//bed_y = ParamHolder.C_Y / 2.0f;
+			//bed_z = (float)ParamHolder.C_Z;
 			break;
 		default:
 			
 			break;
 		}
+		*/
 	}
 	
 	//*************************************************************
@@ -344,10 +408,12 @@ public class GL_Manager implements Runnable{
 		// update buffer ( LINE )
 		GL46.glBindVertexArray(VAO_LINE);
 		GL46.glBindBuffer(GL46.GL_ARRAY_BUFFER, VBO_LINE);
-		GL46.glBufferData(GL46.GL_ARRAY_BUFFER, draw_bed_v, GL46.GL_DYNAMIC_DRAW);
+		//GL46.glBufferData(GL46.GL_ARRAY_BUFFER, draw_bed_v, GL46.GL_DYNAMIC_DRAW);
+		GL46.glBufferData(GL46.GL_ARRAY_BUFFER, bed_v, GL46.GL_DYNAMIC_DRAW);
 		GL46.glVertexAttribPointer(0, 3, GL46.GL_FLOAT, false, 0, 0);
 		
-		GL46.glDrawArrays(GL46.GL_LINES, 0, draw_bed_v.length/3);
+		//GL46.glDrawArrays(GL46.GL_LINES, 0, draw_bed_v.length/3);
+		GL46.glDrawArrays(GL46.GL_LINES, 0, num_bed_line*2);
 	}
 	
 	//*********************************************************
@@ -367,19 +433,19 @@ public class GL_Manager implements Runnable{
 			boolean isInRange = true;
 			
 			// x range
-			if( bed_x <= (targetSTL.bound_max_x + targetSTL.shift_x))
+			if( bed_x_lim <= (targetSTL.bound_max_x + targetSTL.shift_x))
 			{ isInRange = false; }
-			else if( (-bed_x) > (targetSTL.bound_min_x + targetSTL.shift_x))
+			else if( (-bed_x_lim) > (targetSTL.bound_min_x + targetSTL.shift_x))
 			{ isInRange = false;}
 			
 			// y range
-			if( bed_y <= (targetSTL.bound_max_y + targetSTL.shift_y))
+			if( bed_y_lim <= (targetSTL.bound_max_y + targetSTL.shift_y))
 			{ isInRange = false; }
-			else if((-bed_y) > (targetSTL.bound_min_y + targetSTL.shift_y))
+			else if((-bed_y_lim) > (targetSTL.bound_min_y + targetSTL.shift_y))
 			{ isInRange = false; }
 			
 			// z range
-			if(bed_z <= (targetSTL.bound_max_z - targetSTL.bound_min_z))
+			if(bed_z_lim <= (targetSTL.bound_max_z - targetSTL.bound_min_z))
 			{ isInRange = false;}
 			
 			//*******************************************************
