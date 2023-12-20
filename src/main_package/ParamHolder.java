@@ -246,13 +246,13 @@ public class ParamHolder {
 		// CONDITIONAL :::::::::::::::::::::::::::::::::::::
 		if(IS_ADVANCED && IS_ADAPTIVE_SLICE)
 		{
-			ini_string.append("adaptive_slicing = 0\n");
+			ini_string.append("adaptive_slicing = 1\n");
 			ini_string.append(String.format("adaptive_slicing_quality = %d%%\n", ADAPTIVE_QUALITY));
 		}
 		else
 		{
 			ini_string.append("adaptive_slicing = 0\n");
-			ini_string.append("adaptive_slicing_quality = 75%\n");
+			ini_string.append("adaptive_slicing_quality = 0%\n");
 		}
 		//--------------------------------------------------
 		ini_string.append("match_horizontal_surfaces = 0\n");
@@ -290,8 +290,14 @@ public class ParamHolder {
 		ini_string.append("brim_connections_width = 0\n");
 		ini_string.append("interior_brim_width = 0\n");
 		
-		if(IS_SUPPORT) {ini_string.append("support_material = 1\n");}
-		else { ini_string.append("support_material = 0\n");}
+		if(IS_SUPPORT)
+		{
+			ini_string.append("support_material = 1\n");
+		}
+		else
+		{
+			ini_string.append("support_material = 0\n");
+		}
 
 		ini_string.append("support_material_threshold = 40\n");
 		ini_string.append("overhangs = 1\n");
@@ -371,6 +377,7 @@ public class ParamHolder {
 		float baseValue = 0.525f;
 		float nzl_coef = PRNT_NZL[PRINTER_ID] / 0.4f;// 0.4mm nozzle is base.
 		float f_layer_coef = 1.0f; // currently, first layer is fixed in 0.3mm.
+		double normal_layer_coef = LAYER_HEIGHT / 0.3; // 0.2mm -> 0.66, 0.36mm -> 1.2, 
 		float finalWidth = baseValue * nzl_coef * f_layer_coef;
 		
 		if( num_raft == 0 )
@@ -381,29 +388,28 @@ public class ParamHolder {
 			ini_string.append(String.format("first_layer_extrusion_width = %.2f\n", finalWidth));
 			
 			// if no raft, "solid infill" controls solid layer excluding top/bottom cap
-			ini_string.append(String.format("solid_infill_extrusion_width = %.2f\n", finalWidth));
+			ini_string.append(String.format("solid_infill_extrusion_width = %.2f\n", finalWidth*normal_layer_coef));
 			
 			// top cap layer
-			ini_string.append(String.format("top_infill_extrusion_width = %.2f\n", finalWidth));
+			ini_string.append(String.format("top_infill_extrusion_width = %.2f\n", finalWidth*normal_layer_coef));
 		
 			// actually no meanings, in no support printing.
 			ini_string.append("support_material_interface_extrusion_width = 0\n");
 		}
-		else // WITH RAFT,(includint FFL)
+		else // WITH RAFT,(including FFL)
 		{
-
 			// if FLL, "solid_infill" affect bottom cap and normal solid infill
-			ini_string.append(String.format("solid_infill_extrusion_width = %.2f\n", finalWidth));
+			ini_string.append(String.format("solid_infill_extrusion_width = %.2f\n", finalWidth*normal_layer_coef));
 			
 			// top cap layer
-			ini_string.append(String.format("top_infill_extrusion_width = %.2f\n", finalWidth));
+			ini_string.append(String.format("top_infill_extrusion_width = %.2f\n", finalWidth*normal_layer_coef));
 
 			if(IS_FFL)
 			{
 				// actually, no layer modified by this value
 				ini_string.append("first_layer_extrusion_width = 175%\n");
 				// affect on FFL first layer
-				float FFL_width = PRNT_NZL[PRINTER_ID] * 1.5f;
+				float FFL_width = PRNT_NZL[PRINTER_ID] * 1.75f;
 				ini_string.append(String.format("support_material_interface_extrusion_width = %.2f\n", FFL_width));
 			}
 			else // normal raft
@@ -418,11 +424,11 @@ public class ParamHolder {
 		//--------------------------------------------------------
 		
 		// CONDITIONAL (by nozzle size)::::::::::::::::::::::::::::
-		float perimeter_size = PRNT_NZL[PRINTER_ID]* 1.5f;
+		double perimeter_size = PRNT_NZL[PRINTER_ID]* normal_layer_coef * 1.3;
 		
 		ini_string.append(String.format("perimeter_extrusion_width = %.2f\n", perimeter_size));
 		ini_string.append(String.format("external_perimeter_extrusion_width = %.2f\n", perimeter_size));
-		ini_string.append("infill_extrusion_width = 250%\n");
+		ini_string.append(String.format("infill_extrusion_width = %.2f\n", perimeter_size));
 		ini_string.append("support_material_extrusion_width = 0\n"); 
 		//---------------------------------------------------------
 		//***********************************************************
@@ -453,7 +459,7 @@ public class ParamHolder {
 			ini_string.append("# filament setting\n");
 			ini_string.append("filament_colour = #FFFFFF\n");
 			ini_string.append("filament_diameter = 1.75\n");
-			ini_string.append("extrusion_multiplier = 1.0\n");
+			ini_string.append("extrusion_multiplier = 1.03\n");
 		
 			ini_string.append(String.format("first_layer_temperature = %d\n", TEMPERATURE+3));
 			ini_string.append(String.format("temperature = %d\n", TEMPERATURE));
@@ -467,7 +473,7 @@ public class ParamHolder {
 			ini_string.append("min_fan_speed = 35\n");
 			ini_string.append("max_fan_speed = 100\n");
 			ini_string.append("bridge_fan_speed = 100\n");
-			ini_string.append("disable_fan_first_layers = 3\n");
+			ini_string.append("disable_fan_first_layers = 0\n");
 			ini_string.append("fan_below_layer_time = 60\n");
 			ini_string.append("slowdown_below_layer_time = 10\n");
 			ini_string.append("min_print_speed = 20\n");
@@ -482,7 +488,8 @@ public class ParamHolder {
 			
 			ini_string.append(String.format("nozzle_diameter = %.1f\n", PRNT_NZL[PRINTER_ID]));
 			ini_string.append(String.format("bed_shape = 0x0,%dx0,%dx%d,0x%d\n", BedX, BedX, BedY, BedY));
-			ini_string.append("start_gcode = G28 \\nM106 S255 \\nM109 S[first_layer_temperature] \\nG92 E0 \\nG1 X1 Y3 Z0.3 F1000 E0.5 \\nG1 X150 Y3 E18 \\nG92 E0 \\n\n");
+			//ini_string.append("start_gcode = G28 \\nM106 S255 \\nM109 S[first_layer_temperature] \\nG92 E0 \\nG1 X1 Y3 Z0.3 F1000 E0.5 \\nG1 X150 Y3 E18 \\nG92 E0 \\n\n");
+			ini_string.append("start_gcode = G28 \\nM106 S255 \\nM109 S[first_layer_temperature] \\nG92 E0 \\nG1 F200 E0.5 \\nG1 E18 \\nG92 E0 \\n\n");
 			ini_string.append("end_gcode = M104 S0 \\nG28 X0 \\nM84 \\n\n"); // "//n" = yen n
 			ini_string.append("extruder_offset = 0x0 \n");
 			ini_string.append("retract_length = 1.5 \n");
@@ -496,7 +503,7 @@ public class ParamHolder {
 			ini_string.append("retract_restart_extra_toolchange = 0 \n");
 			
 			ini_string.append("has_heatbed = 1\n");
-			ini_string.append("max_layer_height = 0.6\n");
+			ini_string.append("max_layer_height = 0.8\n");
 			ini_string.append("min_layer_height = 0.05\n");
 			ini_string.append("z_offset = 0\n");
 			ini_string.append("octoprint_host =\n");
@@ -535,24 +542,6 @@ public class ParamHolder {
 		 // create argument string for slicer
 		int Center_X = PRNT_X[PRINTER_ID] / 2;
 		int Center_Y = PRNT_Y[PRINTER_ID] / 2;
-		
-		/*
-		switch(PRINTER_ID)
-		{
-		case 0:
-			Center_X = A_X / 2;
-			Center_Y = A_Y / 2;
-			break;
-		case 1:
-			Center_X = B_X / 2;
-			Center_Y = B_Y / 2;
-			break;
-		case 2:
-			Center_X = C_X / 2;
-			Center_Y = C_Y / 2;
-			break;
-		}
-		*/
 		
 		float ave_x = 0.0f;
 		float ave_y = 0.0f;
