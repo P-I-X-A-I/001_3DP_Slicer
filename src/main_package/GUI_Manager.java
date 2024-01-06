@@ -53,7 +53,7 @@ public class GUI_Manager implements ActionListener{
 	public JCheckBox CHK_howManyLoops;
 	public JCheckBox CHK_adaptiveSlice;
 	public JCheckBox CHK_fastFirstLayer;
-	public JCheckBox CHK_baseplate;
+	public JCheckBox CHK_hasCHTnozzle;
 	
 	public JSlider SLI_temperature;
 	
@@ -447,12 +447,12 @@ public class GUI_Manager implements ActionListener{
 			
 		});
 		
-		CHK_baseplate = new JCheckBox("Add base plate(not yet)");
-		CHK_baseplate.setFocusable(false);
-		CHK_baseplate.setSelected(false);
-		paramWindow.getContentPane().add(CHK_baseplate);
-		CHK_baseplate.setBounds(210, 510, 200, 20);
-		CHK_baseplate.setEnabled(false);
+		CHK_hasCHTnozzle = new JCheckBox("has CHT nozzle");
+		CHK_hasCHTnozzle.setFocusable(false);
+		CHK_hasCHTnozzle.setSelected(false);
+		paramWindow.getContentPane().add(CHK_hasCHTnozzle);
+		CHK_hasCHTnozzle.setBounds(210, 510, 200, 20);
+		CHK_hasCHTnozzle.setEnabled(false);
 		
 				
 		CHK_advanced = new JCheckBox("advanced settings");
@@ -467,7 +467,7 @@ public class GUI_Manager implements ActionListener{
 				CHK_howManyLoops.setEnabled(true);
 				CHK_fastFirstLayer.setEnabled(true);
 				CHK_adaptiveSlice.setEnabled(true);
-				CHK_baseplate.setEnabled(true);
+				CHK_hasCHTnozzle.setEnabled(true);
 				SLI_loops.setEnabled(true);
 				SLI_adaptiveSlice.setEnabled(true);
 			}
@@ -476,7 +476,7 @@ public class GUI_Manager implements ActionListener{
 				CHK_howManyLoops.setEnabled(false);
 				CHK_fastFirstLayer.setEnabled(false);
 				CHK_adaptiveSlice.setEnabled(false);
-				CHK_baseplate.setEnabled(false);
+				CHK_hasCHTnozzle.setEnabled(false);
 				SLI_loops.setEnabled(false);
 				SLI_adaptiveSlice.setEnabled(false);
 				
@@ -484,7 +484,7 @@ public class GUI_Manager implements ActionListener{
 				CHK_howManyLoops.setSelected(false);
 				CHK_fastFirstLayer.setSelected(false);
 				CHK_adaptiveSlice.setSelected(false);
-				CHK_baseplate.setSelected(false);
+				CHK_hasCHTnozzle.setSelected(false);
 			}
 		});
 		
@@ -691,8 +691,8 @@ public class GUI_Manager implements ActionListener{
 				ParamHolder.IS_FFL = CHK_fastFirstLayer.isSelected();
 				System.out.println("fast first layer : " + ParamHolder.IS_FFL);
 				
-				ParamHolder.IS_BASE_PLATE = CHK_baseplate.isSelected();
-				System.out.println("automatic baseplate : " + ParamHolder.IS_BASE_PLATE);
+				ParamHolder.IS_CHT_NOZZLE = CHK_hasCHTnozzle.isSelected();
+				System.out.println("has CHT nozzle : " + ParamHolder.IS_CHT_NOZZLE);
 				
 				
 				// disable convert button

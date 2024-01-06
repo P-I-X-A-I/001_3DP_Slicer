@@ -62,7 +62,7 @@ public class ParamHolder {
 	public static boolean IS_ADAPTIVE_SLICE = false;
 	public static int ADAPTIVE_QUALITY = 50;
 	public static boolean IS_FFL = false;
-	public static boolean IS_BASE_PLATE = false;
+	public static boolean IS_CHT_NOZZLE = false;
 	
 	//
 	public static boolean isRender = true;
@@ -232,12 +232,12 @@ public class ParamHolder {
 		{
 			// depend on nozzle dir
 			ini_string.append(String.format("first_layer_height = %.2f\n", FFL_height));
-			ini_string.append("first_layer_speed = 40%\n");
+			ini_string.append("first_layer_speed = 25\n");
 		}
 		else
 		{
 			ini_string.append("first_layer_height = 0.3\n");
-			ini_string.append("first_layer_speed = 35%\n");
+			ini_string.append("first_layer_speed = 25\n");
 		}
 		//-------------------------------------------------
 		
@@ -331,21 +331,9 @@ public class ParamHolder {
 		ini_string.append("support_material_interface_spacing = 1.0\n");
 		ini_string.append("dont_support_bridges = 1\n");
 		ini_string.append("support_material_buildplate_only = 0\n");
-		
-		// #speed settings ---------------------------------
-		ini_string.append("perimeter_speed = 60\n");
-		ini_string.append("small_perimeter_speed = 20\n");
-		ini_string.append("external_perimeter_speed = 55\n");
-		ini_string.append("infill_speed = 60\n");
-		ini_string.append("solid_infill_speed = 60\n");
-		ini_string.append("top_solid_infill_speed = 60\n");
-		ini_string.append("gap_fill_speed = 30\n");
-		ini_string.append("bridge_speed = 65\n");
-		ini_string.append("support_material_speed = 55\n");
-		ini_string.append("support_material_interface_speed = 45\n");
-		ini_string.append("travel_speed = 120\n");
-
-		
+		///////
+		///////
+		///////
 		ini_string.append("perimeter_acceleration = 0\n");
 		ini_string.append("infill_acceleration = 0\n");
 		ini_string.append("bridge_acceleration = 0\n");
@@ -370,52 +358,67 @@ public class ParamHolder {
 		ini_string.append("extrusion_width = 0\n");
 		
 		// CONDITIONAL :::::::::::::::::::::::::::::::::::::::::::
-		// effect only first layer ( not raft )
-		// if no raft, bottom cap is controlled by this value,
-		// if with raft, bottom cap is not controlled by this.
+		float nzl_value = PRNT_NZL[PRINTER_ID];
+		//float f_layer_coef = 1.0f; // currently, first layer is fixed in 0.3mm.
+		//double normal_layer_coef = LAYER_HEIGHT / 0.3; // 0.2mm -> 0.66, 0.36mm -> 1.2, 
+		//float finalWidth = nzl_value * f_layer_coef;
 		
-		float baseValue = 0.525f;
-		float nzl_coef = PRNT_NZL[PRINTER_ID] / 0.4f;// 0.4mm nozzle is base.
-		float f_layer_coef = 1.0f; // currently, first layer is fixed in 0.3mm.
-		double normal_layer_coef = LAYER_HEIGHT / 0.3; // 0.2mm -> 0.66, 0.36mm -> 1.2, 
-		float finalWidth = baseValue * nzl_coef * f_layer_coef;
+		double first_width, infill_width, perimeter_width, solid_width, top_width; // used to calculate speed
+		// set val ***********
+		first_width = nzl_value * 1.5;
+		infill_width = nzl_value * 1.35;
+		solid_width = nzl_value * 1.25;
+		top_width = nzl_value * 1.25;
+		perimeter_width = nzl_value * 1.25;
 		
-		if( num_raft == 0 )
+		System.out.println("first_width : " + first_width + "mm");
+		System.out.println("infill_width : " + infill_width + "mm");
+		System.out.println("solid_width : " + solid_width + "mm");
+		System.out.println("top_width : " + top_width + "mm");
+		
+		if( num_raft == 0 ) 
 		{
 			// this value controll bottom cap layer ( not raft )
 			// by default, this value is 200% of first layer height -> ex. 0.3 * 2.0 = 0.6
 			// 175% value seems to be better, = 0.525 for 0.3mm layer height
-			ini_string.append(String.format("first_layer_extrusion_width = %.2f\n", finalWidth));
+			ini_string.append(String.format("first_layer_extrusion_width = %.2f\n", first_width));
 			
+			// infill
+			ini_string.append(String.format("infill_extrusion_width = %.2f\n", infill_width));
+
 			// if no raft, "solid infill" controls solid layer excluding top/bottom cap
-			ini_string.append(String.format("solid_infill_extrusion_width = %.2f\n", finalWidth*normal_layer_coef));
+			ini_string.append(String.format("solid_infill_extrusion_width = %.2f\n", solid_width));
 			
 			// top cap layer
-			ini_string.append(String.format("top_infill_extrusion_width = %.2f\n", finalWidth*normal_layer_coef));
+			ini_string.append(String.format("top_infill_extrusion_width = %.2f\n", top_width));
 		
 			// actually no meanings, in no support printing.
 			ini_string.append("support_material_interface_extrusion_width = 0\n");
+			
 		}
 		else // WITH RAFT,(including FFL)
 		{
+			ini_string.append(String.format("infill_extrusion_width = %.2f\n", infill_width));
+
 			// if FLL, "solid_infill" affect bottom cap and normal solid infill
-			ini_string.append(String.format("solid_infill_extrusion_width = %.2f\n", finalWidth*normal_layer_coef));
+			ini_string.append(String.format("solid_infill_extrusion_width = %.2f\n", solid_width));
 			
 			// top cap layer
-			ini_string.append(String.format("top_infill_extrusion_width = %.2f\n", finalWidth*normal_layer_coef));
+			ini_string.append(String.format("top_infill_extrusion_width = %.2f\n", top_width));
 
 			if(IS_FFL)
 			{
 				// actually, no layer modified by this value
 				ini_string.append("first_layer_extrusion_width = 175%\n");
+				
 				// affect on FFL first layer
-				float FFL_width = PRNT_NZL[PRINTER_ID] * 1.75f;
+				float FFL_width = PRNT_NZL[PRINTER_ID] * 2.5f;
 				ini_string.append(String.format("support_material_interface_extrusion_width = %.2f\n", FFL_width));
 			}
 			else // normal raft
 			{
 				// affect on first raft layer
-				ini_string.append("first_layer_extrusion_width = 0\n");	
+				ini_string.append(String.format("first_layer_extrusion_width = %d\n", first_width));
 				// normal interface layer
 				ini_string.append("support_material_interface_extrusion_width = 0\n");
 			}
@@ -423,19 +426,92 @@ public class ParamHolder {
 		}
 		//--------------------------------------------------------
 		
-		// CONDITIONAL (by nozzle size)::::::::::::::::::::::::::::
-		double perimeter_size = PRNT_NZL[PRINTER_ID]* normal_layer_coef * 1.3;
 		
-		ini_string.append(String.format("perimeter_extrusion_width = %.2f\n", perimeter_size));
-		ini_string.append(String.format("external_perimeter_extrusion_width = %.2f\n", perimeter_size));
-		ini_string.append(String.format("infill_extrusion_width = %.2f\n", perimeter_size));
+		// CONDITIONAL (by nozzle size)::::::::::::::::::::::::::::
+		ini_string.append(String.format("perimeter_extrusion_width = %.2f\n", perimeter_width));
+		ini_string.append(String.format("external_perimeter_extrusion_width = %.2f\n", perimeter_width));
 		ini_string.append("support_material_extrusion_width = 0\n"); 
 		//---------------------------------------------------------
+		
+		
+		// #speed settings ---------------------------------
+		// first, infill, solid, top, perimeter
+		double infill_plane, solid_plane, top_plane, perimeter_plane;
+		// area size
+		infill_plane = infill_width * LAYER_HEIGHT;
+		solid_plane = solid_width * LAYER_HEIGHT;
+		top_plane = top_width * LAYER_HEIGHT;
+		perimeter_plane = perimeter_width * LAYER_HEIGHT;
+		
+		System.out.println("infill_plane : " + infill_plane + "mm^2");
+		System.out.println("solid_plane" + solid_plane + "mm^2");
+		System.out.println("top_plane" + top_plane + "mm^2");
+		System.out.println("perimeter_plane" + perimeter_plane + "mm^2");
+		
+		int infill_speed, solid_speed, top_speed, perimeter_speed;
+		double volumetric = 0.0;
+		
+		//double print_plane = PRNT_NZL[PRINTER_ID] * LAYER_HEIGHT; // mm^2
+		//double base_speed = 0.0;
+		//int base_speed_int = 0;
+		
+		if(IS_CHT_NOZZLE)
+		{
+			volumetric = 21.0; // mm^3/s
+		}
+		else
+		{
+			volumetric = 11.0; // mm^3/s
+		}
+		
+		// print faster (limit to 100mm/s)
+		infill_speed = Math.min((int)(volumetric / infill_plane), 150);
+		solid_speed = Math.min((int)(volumetric / solid_plane), 150);
+		top_speed = Math.min((int)(volumetric / top_plane), 150);
+		perimeter_speed = Math.min((int)(volumetric / perimeter_plane), 150);
+		
+		System.out.println("infill_speed : " + infill_speed + "mm/s");
+		System.out.println("solid_speed : " + solid_speed + "mm/s");
+		System.out.println("top_speed : " + top_speed + "mm/s");
+		System.out.println("perimeter_speed : " + perimeter_speed + "mm/s");
+		
+		
+		//ini_string.append("perimeter_speed = 52\n");
+		ini_string.append(String.format("perimeter_speed = %d\n", perimeter_speed));
+		
+		ini_string.append("small_perimeter_speed = 20\n");
+		
+		//ini_string.append("external_perimeter_speed = 50\n");
+		ini_string.append(String.format("external_perimeter_speed = %d\n", (int)(perimeter_speed * 0.9)));
+		
+		//ini_string.append("infill_speed = 53\n");
+		ini_string.append(String.format("infill_speed = %d\n", infill_speed));
+		
+		//ini_string.append("solid_infill_speed = 53\n");
+		ini_string.append(String.format("solid_infill_speed = %d\n", solid_speed));
+		
+		//ini_string.append("top_solid_infill_speed = 50\n");
+		ini_string.append(String.format("top_solid_infill_speed = %d\n", top_speed));
+		
+		ini_string.append("gap_fill_speed = 30\n"); // small area infilling
+		
+		//ini_string.append("bridge_speed = 60\n");
+		ini_string.append(String.format("bridge_speed = %d\n", perimeter_speed));
+		
+		//ini_string.append("support_material_speed = 50\n");
+		ini_string.append(String.format("support_material_speed = %d\n", infill_speed));
+		
+		//ini_string.append("support_material_interface_speed = 48\n");
+		ini_string.append(String.format("support_material_interface_speed = %d\n", infill_speed));
+		
+		ini_string.append("travel_speed = 180\n");
+		
+		
 		//***********************************************************
 		//***********************************************************
 		
 		
-		ini_string.append("infill_overlap = 80%\n");
+		ini_string.append("infill_overlap = 85%\n");
 		ini_string.append("bridge_flow_ratio = 1\n");
 		ini_string.append("xy_size_compensation = 0\n");
 		ini_string.append("threads = 8\n");
@@ -459,7 +535,7 @@ public class ParamHolder {
 			ini_string.append("# filament setting\n");
 			ini_string.append("filament_colour = #FFFFFF\n");
 			ini_string.append("filament_diameter = 1.75\n");
-			ini_string.append("extrusion_multiplier = 1.03\n");
+			ini_string.append("extrusion_multiplier = 1.0\n");
 		
 			ini_string.append(String.format("first_layer_temperature = %d\n", TEMPERATURE+3));
 			ini_string.append(String.format("temperature = %d\n", TEMPERATURE));
