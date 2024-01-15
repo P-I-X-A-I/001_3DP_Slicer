@@ -63,6 +63,7 @@ public class ParamHolder {
 	public static int ADAPTIVE_QUALITY = 50;
 	public static boolean IS_FFL = false;
 	public static boolean IS_CHT_NOZZLE = false;
+	public static int VOLUMETRIC_SPEED = 10;
 	
 	//
 	public static boolean isRender = true;
@@ -227,17 +228,20 @@ public class ParamHolder {
 		// common settings
 		// CONDITIONAL ::::::::::::::::::::::::::::::::::::
 		// Thicker layer can adhere to bed strongly
-		float FFL_height = PRNT_NZL[PRINTER_ID]*0.33f;
+		float FFL_height = PRNT_NZL[PRINTER_ID]*0.4f;
+		float first_height_start_gcode = 0.0f;
 		if(IS_ADVANCED && IS_FFL)
 		{
 			// depend on nozzle dir
 			ini_string.append(String.format("first_layer_height = %.2f\n", FFL_height));
-			ini_string.append("first_layer_speed = 25\n");
+			ini_string.append("first_layer_speed = 22\n");
+			first_height_start_gcode = FFL_height; // use later
 		}
 		else
 		{
 			ini_string.append("first_layer_height = 0.3\n");
-			ini_string.append("first_layer_speed = 25\n");
+			ini_string.append("first_layer_speed = 22\n");
+			first_height_start_gcode = 0.3f; // use later
 		}
 		//-------------------------------------------------
 		
@@ -278,7 +282,7 @@ public class ParamHolder {
 		ini_string.append("solid_infill_every_layers = 0\n");
 		ini_string.append("fill_gaps = 1\n");
 		ini_string.append("fill_angle = 135\n");
-		ini_string.append("solid_infill_below_area = 5\n");
+		ini_string.append("solid_infill_below_area = 1\n");
 		ini_string.append("only_retract_when_crossing_perimeters = 1\n");
 		ini_string.append("infill_first = 0\n");
 		
@@ -325,10 +329,10 @@ public class ParamHolder {
 		ini_string.append(String.format("raft_layers = %d\n", num_raft));
 		ini_string.append("support_material_contact_distance = 0\n");
 		ini_string.append("support_material_pattern = pillars\n"); // or "rectilinear"
-		ini_string.append("support_material_spacing = 2.5\n");
+		ini_string.append("support_material_spacing = 2.75\n");
 		ini_string.append("support_material_angle = 120\n");
 		ini_string.append(String.format("support_material_interface_layers = %d\n", num_interface));
-		ini_string.append("support_material_interface_spacing = 1.0\n");
+		ini_string.append("support_material_interface_spacing = 1.2\n");
 		ini_string.append("dont_support_bridges = 1\n");
 		ini_string.append("support_material_buildplate_only = 0\n");
 		///////
@@ -367,8 +371,8 @@ public class ParamHolder {
 		// set val ***********
 		first_width = nzl_value * 1.5;
 		infill_width = nzl_value * 1.35;
-		solid_width = nzl_value * 1.25;
-		top_width = nzl_value * 1.25;
+		solid_width = nzl_value * 1.35;
+		top_width = nzl_value * 1.35;
 		perimeter_width = nzl_value * 1.25;
 		
 		System.out.println("first_width : " + first_width + "mm");
@@ -418,7 +422,7 @@ public class ParamHolder {
 			else // normal raft
 			{
 				// affect on first raft layer
-				ini_string.append(String.format("first_layer_extrusion_width = %d\n", first_width));
+				ini_string.append(String.format("first_layer_extrusion_width = %.2f\n", PRNT_NZL[PRINTER_ID]*2.0f));
 				// normal interface layer
 				ini_string.append("support_material_interface_extrusion_width = 0\n");
 			}
@@ -450,18 +454,17 @@ public class ParamHolder {
 		
 		int infill_speed, solid_speed, top_speed, perimeter_speed;
 		double volumetric = 0.0;
-		
 		//double print_plane = PRNT_NZL[PRINTER_ID] * LAYER_HEIGHT; // mm^2
 		//double base_speed = 0.0;
 		//int base_speed_int = 0;
 		
 		if(IS_CHT_NOZZLE)
 		{
-			volumetric = 21.0; // mm^3/s
+			volumetric = VOLUMETRIC_SPEED; //mm^3/s
 		}
 		else
 		{
-			volumetric = 11.0; // mm^3/s
+			volumetric = 10.0; //mm^3/s
 		}
 		
 		// print faster (limit to 100mm/s)
@@ -479,7 +482,8 @@ public class ParamHolder {
 		//ini_string.append("perimeter_speed = 52\n");
 		ini_string.append(String.format("perimeter_speed = %d\n", perimeter_speed));
 		
-		ini_string.append("small_perimeter_speed = 20\n");
+		//ini_string.append("small_perimeter_speed = 20\n");
+		ini_string.append(String.format("small_perimeter_speed = %d\n", 22));
 		
 		//ini_string.append("external_perimeter_speed = 50\n");
 		ini_string.append(String.format("external_perimeter_speed = %d\n", (int)(perimeter_speed * 0.9)));
@@ -532,11 +536,21 @@ public class ParamHolder {
 		//****** filament setting ***************************************
 		//***************************************************************
 			
+			double extrusion_coef = 0.0;
+			
+			if(LAYER_HEIGHT < 0.3 )
+			{
+				extrusion_coef = (1.0 - (LAYER_HEIGHT / 0.3)) * 0.1; // 0.2mm = 0.0333, 0.1mm = 0.0666
+			}
+			
+			
 			ini_string.append("# filament setting\n");
 			ini_string.append("filament_colour = #FFFFFF\n");
 			ini_string.append("filament_diameter = 1.75\n");
-			ini_string.append("extrusion_multiplier = 1.0\n");
-		
+			//ini_string.append("extrusion_multiplier = 1.0\n");
+			ini_string.append(String.format("extrusion_multiplier = %.4f\n", 1.002 + extrusion_coef));
+			System.out.println("extrusion multiplier : " + (1.002 + extrusion_coef));
+			
 			ini_string.append(String.format("first_layer_temperature = %d\n", TEMPERATURE+3));
 			ini_string.append(String.format("temperature = %d\n", TEMPERATURE));
 			ini_string.append("first_layer_bed_temperature = 0\n");
@@ -552,7 +566,7 @@ public class ParamHolder {
 			ini_string.append("disable_fan_first_layers = 0\n");
 			ini_string.append("fan_below_layer_time = 60\n");
 			ini_string.append("slowdown_below_layer_time = 10\n");
-			ini_string.append("min_print_speed = 20\n");
+			ini_string.append("min_print_speed = 15\n");
 			
 		//***************************************************************
 		//****** machine setting ***************************************
@@ -564,11 +578,13 @@ public class ParamHolder {
 			
 			ini_string.append(String.format("nozzle_diameter = %.1f\n", PRNT_NZL[PRINTER_ID]));
 			ini_string.append(String.format("bed_shape = 0x0,%dx0,%dx%d,0x%d\n", BedX, BedX, BedY, BedY));
-			//ini_string.append("start_gcode = G28 \\nM106 S255 \\nM109 S[first_layer_temperature] \\nG92 E0 \\nG1 X1 Y3 Z0.3 F1000 E0.5 \\nG1 X150 Y3 E18 \\nG92 E0 \\n\n");
-			ini_string.append("start_gcode = G28 \\nM106 S255 \\nM109 S[first_layer_temperature] \\nG92 E0 \\nG1 F200 E0.5 \\nG1 E18 \\nG92 E0 \\n\n");
+			// START GCODE ********************************
+			ini_string.append("start_gcode = G28 \\nM106 S255 \\nM109 S[first_layer_temperature] \\nG92 E0 ");
+			ini_string.append(String.format("\\nG1 X1 Y3 Z%.2f F1000 E0.5 \\nG1 X100 Y3 E18 \\nG92 E0 \\n\n", first_height_start_gcode));
+			//ini_string.append("start_gcode = G28 \\nM106 S255 \\nM109 S[first_layer_temperature] \\nG92 E0 \\nG1 F300 E0.5 \\nG1 E40 \\nG92 E0 \\n\n");
 			ini_string.append("end_gcode = M104 S0 \\nG28 X0 \\nM84 \\n\n"); // "//n" = yen n
 			ini_string.append("extruder_offset = 0x0 \n");
-			ini_string.append("retract_length = 1.5 \n");
+			ini_string.append("retract_length = 1.0 \n");
 			ini_string.append("retract_lift = 0 \n");
 			ini_string.append("retract_speed = 80 \n");
 			ini_string.append("retract_restart_extra = 0 \n");

@@ -36,6 +36,7 @@ public class GUI_Manager implements ActionListener{
 	public JSlider SLI_infill;
 	public JSlider SLI_loops;
 	public JSlider SLI_adaptiveSlice;
+	public JSlider SLI_volumetric;
 
 	
 	public JRadioButton RD_x;
@@ -343,11 +344,11 @@ public class GUI_Manager implements ActionListener{
 		
 		
 		// temperature
-		JLabel LB_temp = new JLabel("Temperature : 210");
+		JLabel LB_temp = new JLabel("Temperature : 200");
 		paramWindow.getContentPane().add(LB_temp);
 		LB_temp.setBounds(220, 290, 200, 20);
 		
-		SLI_temperature = new JSlider(0, 10, 4);
+		SLI_temperature = new JSlider(0, 12, 4);
 		SLI_temperature.setFocusable(false);
 		SLI_temperature.setPaintTicks(true);
 		SLI_temperature.setSnapToTicks(true);
@@ -361,7 +362,7 @@ public class GUI_Manager implements ActionListener{
 			public void stateChanged(ChangeEvent e) {
 				// TODO Auto-generated method stub
 				int SLI = SLI_temperature.getValue();
-				String tempStr = String.format("Temperature : %d", 190 + SLI*5);
+				String tempStr = String.format("Temperature : %d", 180 + SLI*5);
 				LB_temp.setText(tempStr);
 			}
 			
@@ -454,6 +455,28 @@ public class GUI_Manager implements ActionListener{
 		CHK_hasCHTnozzle.setBounds(210, 510, 200, 20);
 		CHK_hasCHTnozzle.setEnabled(false);
 		
+		SLI_volumetric = new JSlider(10, 24, 15);
+		SLI_volumetric.setFocusable(false);
+		SLI_volumetric.setPaintTicks(true);
+		SLI_volumetric.setSnapToTicks(true);
+		SLI_volumetric.setMajorTickSpacing(1);
+		SLI_volumetric.setMinorTickSpacing(1);
+		paramWindow.getContentPane().add(SLI_volumetric);
+		SLI_volumetric.setBounds(210, 540, 180, 20);
+		SLI_volumetric.setEnabled(false);
+		SLI_volumetric.addChangeListener(new ChangeListener() {
+			
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				// TODO Auto-generated method stub
+				int volspeed = SLI_volumetric.getValue();
+				String tempStr = String.format("has CHT nzl : %d mm^3/s", volspeed);
+				CHK_hasCHTnozzle.setText(tempStr);
+				
+				ParamHolder.VOLUMETRIC_SPEED = volspeed;
+			}
+		});
+		
 				
 		CHK_advanced = new JCheckBox("advanced settings");
 		CHK_advanced.setFocusable(false);
@@ -470,6 +493,7 @@ public class GUI_Manager implements ActionListener{
 				CHK_hasCHTnozzle.setEnabled(true);
 				SLI_loops.setEnabled(true);
 				SLI_adaptiveSlice.setEnabled(true);
+				SLI_volumetric.setEnabled(true);
 			}
 			else
 			{
@@ -479,6 +503,7 @@ public class GUI_Manager implements ActionListener{
 				CHK_hasCHTnozzle.setEnabled(false);
 				SLI_loops.setEnabled(false);
 				SLI_adaptiveSlice.setEnabled(false);
+				SLI_volumetric.setEnabled(false);
 				
 				// turn of checkboxes;
 				CHK_howManyLoops.setSelected(false);
@@ -676,7 +701,7 @@ public class GUI_Manager implements ActionListener{
 				ParamHolder.IS_RAFT = CHK_raft.isSelected();
 				System.out.println("raft : " + ParamHolder.IS_RAFT);
 				
-				ParamHolder.TEMPERATURE = SLI_temperature.getValue()*5 + 190;
+				ParamHolder.TEMPERATURE = SLI_temperature.getValue()*5 + 180;
 				System.out.println("temperature : " + ParamHolder.TEMPERATURE);
 				
 				ParamHolder.IS_ADVANCED = CHK_advanced.isSelected();
